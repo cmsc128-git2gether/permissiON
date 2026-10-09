@@ -104,7 +104,7 @@ cp .env.example .env   # fill in values
 
 ## Documentation
 
-- [Wireframes (Figma)]()
+- [Wireframes (Figma)](https://www.figma.com/design/GflfbKiRYpEubelCggKP6t/-CMSC-128--git2gether?node-id=21-2&p=f&t=76yiqz6goeVUMVay-0)
 - [Data model / ERD](docs/erd.png)
 - [Requirements and validation notes](docs/requirements.md)
 - [PACT analysis](docs/pact.md)
