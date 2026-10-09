@@ -104,11 +104,11 @@ cp .env.example .env   # fill in values
 
 ## Documentation
 
+- [Software Specifications I - Interview Report & Project Proposal](https://docs.google.com/document/d/1sJFH7OkI7XbVuXOBWC1f7jiuwu5QSNnitTlRYMTITdc/edit?tab=t.0)
+- [Software Specifications II - Requirements List & Validation Report](https://docs.google.com/document/d/1sJFH7OkI7XbVuXOBWC1f7jiuwu5QSNnitTlRYMTITdc/edit?tab=t.kt23onxkd7b)
+- [PACT Analysis](https://docs.google.com/document/d/1sJFH7OkI7XbVuXOBWC1f7jiuwu5QSNnitTlRYMTITdc/edit?tab=t.c9z0pzict9xh)
 - [Wireframes (Figma)](https://www.figma.com/design/GflfbKiRYpEubelCggKP6t/-CMSC-128--git2gether?node-id=21-2&p=f&t=76yiqz6goeVUMVay-0)
-- [Data model / ERD](docs/erd.png)
-- [Requirements and validation notes](docs/requirements.md)
-- [PACT analysis](docs/pact.md)
-- [User flows](docs/flows.md)
+- [Data model](https://docs.google.com/document/d/1sJFH7OkI7XbVuXOBWC1f7jiuwu5QSNnitTlRYMTITdc/edit?tab=t.w8ah07kzvdbi)
 
 ## Sprint Progress
 
