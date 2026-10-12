@@ -52,6 +52,52 @@ Short paragraph: the problem (paper permits, manual logs), who it's for (residen
 | Hosting / CI  | _TBD_  |
 
 ## Data Model
+_Firebase stores databases as collections and documents. No need for tables and normalization for the relationships of entities._ 
+
+### Schema
+```
+users/{user_id}
+	email, access_level: "end_user" | "admin"
+	updated_at: TIMESTAMP | NULL, deleted_at: TIMESTAMP | NULL
+
+admin_profiles/{user_id}
+	full_name, display_photo, position, on_duty: BOOL
+
+end_user_profiles/{user_id}
+	full_name, display_photo, phone_num, room_num
+	active_permits, permit_history (QUERIES ONLY)
+	delinquency_count (QUERIES ONLY)
+
+permits/{permit_id}
+	user_id, full_name, room_num
+	permit_type: "LATE" | "OVERNIGHT" | "WEEKEND"
+	destination, purpose, emergency_contact_person, emergency_contact_num
+	expected_time_in: TIMESTAMP
+	actual_time_in: TIMESTAMP | NULL (QUERIES FROM SCANNED QR)
+	permit_status: "PENDING" | "ACTIVE" | "CANCELLED" | "COMPLETED" | "OVERDUE" | "DISAPPROVED"
+	approved_by: admin_id, approved_at: TIMESTAMP | NULL
+	qr_id: STRING | NULL
+	created_at: TIMESTAMP
+
+qr/{qr_id}
+	permit_id, admin_id
+	status: "ACTIVE" | "SCANNED" | "CANCELLED"
+	created_at: TIMESTAMP, expires_at: TIMESTAMP
+	scanned_at: TIMESTAMP | NULL, scanned_by: user_id | NULL
+
+delinquency_logs/{delinquency_id}
+	user_id, permit_id
+	violation_type, violation_description
+	reported_by: admin_id | NULL, created_at: TIMESTAMP | NULL
+```
+
+### Flow
+- A user can only have one profile– either as an admin or as an end user.
+- An end user can file only one permit.
+- An admin user can approve or disapprove one or many permits.
+- An end user can have zero or many delinquencies.
+- A permit can only have one valid QR.
+
 
 ## Project Structure
 
