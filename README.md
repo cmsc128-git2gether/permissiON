@@ -42,19 +42,21 @@ Short paragraph: the problem (paper permits, manual logs), who it's for (residen
 
 ## Tech Stack
 
-| Layer         | Choice |
-| ------------- | ------ |
-| Frontend      | _TBD_  |
-| Backend       | _TBD_  |
-| Database      | _TBD_  |
-| Auth / OTP    | _TBD_  |
-| Notifications | _TBD_  |
-| Hosting / CI  | _TBD_  |
+| Layer         | Choice          |
+| ------------- | --------------- |
+| Frontend      | Flutter         |
+| Backend       | Firebase        |
+| Database      | Cloud Firestore |
+| Auth / OTP    | _TBD_           |
+| Notifications | _TBD_           |
+| Hosting / CI  | _TBD_           |
 
 ## Data Model
-_Firebase stores databases as collections and documents. No need for tables and normalization for the relationships of entities._ 
+
+_Firebase stores databases as collections and documents. No need for tables and normalization for the relationships of entities._
 
 ### Schema
+
 ```
 users/{user_id}
 	email, access_level: "end_user" | "admin"
@@ -92,27 +94,30 @@ delinquency_logs/{delinquency_id}
 ```
 
 ### Flow
+
 - A user can only have one profile– either as an admin or as an end user.
 - An end user can file only one permit.
 - An admin user can approve or disapprove one or many permits.
 - An end user can have zero or many delinquencies.
 - A permit can only have one valid QR.
 
-
 ## Project Structure
 
 ```
-.
-├── docs/
-│   ├── wireframes/
-│   ├── validation
-│   └── requirements.md
-│
-├── frontend/
-├── backend/
-├── .github/
-│   └── PULL_REQUEST_TEMPLATE.md
-└── README.md
+permissiON
+├── android/
+├── ios/
+├── assets/                 
+│   ├── images/
+│   ├── icons/
+│   └── fonts/
+├── build/                 
+├── lib/                    
+├── test/                  
+├── .gitignore              
+├── pubspec.yaml           
+└── README.md                
+
 ```
 
 ## Getting Started
@@ -154,21 +159,24 @@ cp .env.example .env   # fill in values
 - [Software Specifications II - Requirements List & Validation Report](https://docs.google.com/document/d/1sJFH7OkI7XbVuXOBWC1f7jiuwu5QSNnitTlRYMTITdc/edit?tab=t.kt23onxkd7b)
 - [PACT Analysis](https://docs.google.com/document/d/1sJFH7OkI7XbVuXOBWC1f7jiuwu5QSNnitTlRYMTITdc/edit?tab=t.c9z0pzict9xh)
 - [Wireframes (Figma)](https://www.figma.com/design/GflfbKiRYpEubelCggKP6t/-CMSC-128--git2gether?node-id=21-2&p=f&t=76yiqz6goeVUMVay-0)
-- [Data model](https://docs.google.com/document/d/1sJFH7OkI7XbVuXOBWC1f7jiuwu5QSNnitTlRYMTITdc/edit?tab=t.w8ah07kzvdbi)
 
 ## Sprint Progress
 
-| Sprint | Focus                              | Status      | Notes                                   |
-| ------ | ---------------------------------- | ----------- | --------------------------------------- |
-| 1      | Wireframes, data model, user flows | In progress | [sprint-1.md](docs/sprints/sprint-1.md) |
-| 2      | _TBD_                              | Planned     |                                         |
-| 3      | _TBD_                              | Planned     |                                         |
+| Sprint | Focus                              | Status      | Notes                                                                                                                           |
+| ------ | ---------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 1      | Wireframes, data model, user flows | In progress | [User Stories](https://docs.google.com/spreadsheets/d/1ttPp9L5IGLKUVZ3a-sBnqR2AKmY9hZ4rxIdNRENLatc/edit?usp=sharingsprint-1.md) |
+| 2      | _TBD_                              | Planned     |                                                                                                                                 |
+| 3      | _TBD_                              | Planned     |                                                                                                                                 |
 
 ## Team
 
-| Name   | Role   | Focus  |
-| ------ | ------ | ------ |
-| _name_ | _role_ | _area_ |
+| Name      | Role                     | Focus    |
+| --------- | ------------------------ | -------- |
+| De Guzman | Product Owner, Developer | Frontend |
+| Cambel    | Scrum Master, Developer  | Frontend |
+| Carreon   | Developer                | Backend  |
+| Melicor   | Developer                | Backend  |
+| Gelvezon  | Developer                | Backend  |
 
 ## Contributing
 
