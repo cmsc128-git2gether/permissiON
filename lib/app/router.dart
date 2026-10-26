@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // File imports
-import '../features/authentication/data/auth_repository.dart';
 import '../features/authentication/domain/user_model.dart';
 import '../features/authentication/presentation/admin_dashboard.dart';
 import '../features/authentication/presentation/dormer_dashboard.dart';
@@ -17,7 +16,7 @@ GoRouter createRouter(Stream<AppUser?> authStream) {
   return GoRouter(
     initialLocation: '/login',
     refreshListenable: GoRouterRefreshStream(authStream),
-    redirect: (context, state) {  
+    redirect: (context, state) {
       final isLoggingIn = state.matchedLocation == '/login';
 
       if (user == null) return isLoggingIn ? null : '/login';
