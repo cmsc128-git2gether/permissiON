@@ -62,4 +62,11 @@ class QrCodeModel {
       'scanned_by': scannedBy,
     };
   }
+
+  // Typed reference to qr/{qr_id}; reads return QrCodeModel, writes accept it
+  static CollectionReference<QrCodeModel> get collection =>
+      FirebaseFirestore.instance.collection('qr').withConverter<QrCodeModel>(
+            fromFirestore: QrCodeModel.fromFirestore,
+            toFirestore: (qr, _) => qr.toFirestore(),
+          );
 }
