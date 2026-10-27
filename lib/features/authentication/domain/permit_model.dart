@@ -21,8 +21,7 @@ class PermitStatus {
 class PermitModel {
   final String id; // Firestore doc ID (permit_id)
   final String userId; // FK -> users/{user_id} (the end user who filed it)
-  final String surname; // Copied from end_user_profiles at filing time
-  final String givenName;
+  final String fullName; // Copied from end_user_profiles at filing time
   final String roomNum;
   final String permitType; // 'LATE' | 'OVERNIGHT' | 'WEEKEND'
   final String destination;
@@ -32,7 +31,6 @@ class PermitModel {
   final DateTime expectedTimeIn;
   final DateTime? actualTimeIn; // Set from qr.scanned_at; null on default
   final String permitStatus; // Defaults to 'PENDING'
-  final String? disapprovalReason; // Text; only set when DISAPPROVED
   final String? approvedBy; // FK -> users/{admin_id}; null until acted on
   final DateTime? approvedAt;
   final String? qrId; // FK -> qr/{qr_id}; null on default
@@ -41,8 +39,7 @@ class PermitModel {
   PermitModel({
     required this.id,
     required this.userId,
-    required this.surname,
-    required this.givenName,
+    required this.fullName,
     required this.roomNum,
     required this.permitType,
     required this.destination,
@@ -52,7 +49,6 @@ class PermitModel {
     required this.expectedTimeIn,
     this.actualTimeIn,
     this.permitStatus = PermitStatus.pending,
-    this.disapprovalReason,
     this.approvedBy,
     this.approvedAt,
     this.qrId,
@@ -68,8 +64,7 @@ class PermitModel {
     return PermitModel(
       id: snapshot.id,
       userId: data['user_id'] ?? '',
-      surname: data['surname'] ?? '',
-      givenName: data['given_name'] ?? '',
+      fullName: data['full_name'] ?? '',
       roomNum: data['room_num'] ?? '',
       permitType: data['permit_type'] ?? PermitType.late,
       destination: data['destination'] ?? '',
@@ -79,7 +74,6 @@ class PermitModel {
       expectedTimeIn: (data['expected_time_in'] as Timestamp).toDate(),
       actualTimeIn: (data['actual_time_in'] as Timestamp?)?.toDate(),
       permitStatus: data['permit_status'] ?? PermitStatus.pending,
-      disapprovalReason: data['disapproval_reason'],
       approvedBy: data['approved_by'],
       approvedAt: (data['approved_at'] as Timestamp?)?.toDate(),
       qrId: data['qr_id'],
@@ -91,8 +85,7 @@ class PermitModel {
   Map<String, dynamic> toFirestore() {
     return {
       'user_id': userId,
-      'surname': surname,
-      'given_name': givenName,
+      'full_name': fullName,
       'room_num': roomNum,
       'permit_type': permitType,
       'destination': destination,
@@ -103,7 +96,6 @@ class PermitModel {
       'actual_time_in':
           actualTimeIn == null ? null : Timestamp.fromDate(actualTimeIn!),
       'permit_status': permitStatus,
-      'disapproval_reason': disapprovalReason,
       'approved_by': approvedBy,
       'approved_at': approvedAt == null ? null : Timestamp.fromDate(approvedAt!),
       'qr_id': qrId,
