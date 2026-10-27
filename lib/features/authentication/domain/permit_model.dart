@@ -110,4 +110,11 @@ class PermitModel {
       'created_at': Timestamp.fromDate(createdAt),
     };
   }
+
+  // Typed reference to permits/{permit_id}; reads return PermitModel, writes accept it
+  static CollectionReference<PermitModel> get collection =>
+      FirebaseFirestore.instance.collection('permits').withConverter<PermitModel>(
+            fromFirestore: PermitModel.fromFirestore,
+            toFirestore: (permit, _) => permit.toFirestore(),
+          );
 }
