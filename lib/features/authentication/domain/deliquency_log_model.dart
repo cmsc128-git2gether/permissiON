@@ -50,4 +50,11 @@ class DelinquencyLogModel {
           : Timestamp.fromDate(createdAt!),
     };
   }
+
+  // Typed reference to delinquency_logs/{delinquency_id}; reads return DelinquencyLogModel, writes accept it
+  static CollectionReference<DelinquencyLogModel> get collection =>
+      FirebaseFirestore.instance.collection('delinquency_logs').withConverter<DelinquencyLogModel>(
+            fromFirestore: DelinquencyLogModel.fromFirestore,
+            toFirestore: (log, _) => log.toFirestore(),
+          );
 }
