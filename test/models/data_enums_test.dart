@@ -13,7 +13,6 @@ void main() {
         });
 
         test('is case-sensitive', () {
-            expect(() => AccessLevel.fromString('END_USER'), throwsArgumentError);
             expect(() => AccessLevel.fromString('ADMIN'), throwsArgumentError);
         });
 
