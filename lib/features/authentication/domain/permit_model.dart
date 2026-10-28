@@ -14,26 +14,26 @@ class PermitStatus {
   static const cancelled = 'CANCELLED';
   static const completed = 'COMPLETED';
   static const overdue = 'OVERDUE';
-  static const disapproved = 'DISAPPROVED';
+  static const denied = 'DENIED';
 }
 
 // Model for a permit, stored at permits/{permit_id}
 class PermitModel {
-  final String id; // Firestore doc ID (permit_id)
-  final String userId; // FK -> users/{user_id} (the end user who filed it)
-  final String fullName; // Copied from end_user_profiles at filing time
+  final String id;                        // Firestore doc ID (permit_id)
+  final String userId;                    // FK -> users/{user_id} (the end user who filed it)
+  final String fullName;                  // Copied from end_user_profiles at filing time
   final String roomNum;
-  final String permitType; // 'LATE' | 'OVERNIGHT' | 'WEEKEND'
+  final String permitType;                // 'LATE' | 'OVERNIGHT' | 'WEEKEND'
   final String destination;
   final String purpose;
   final String emergencyContactPerson;
   final String emergencyContactNum;
   final DateTime expectedTimeIn;
-  final DateTime? actualTimeIn; // Set from qr.scanned_at; null on default
-  final String permitStatus; // Defaults to 'PENDING'
-  final String? approvedBy; // FK -> users/{admin_id}; null until acted on
+  final DateTime? actualTimeIn;          // Set from qr.scanned_at; null on default
+  final String permitStatus;             // Defaults to 'PENDING'
+  final String? approvedBy;              // FK -> users/{admin_id}; null until acted on
   final DateTime? approvedAt;
-  final String? qrId; // FK -> qr/{qr_id}; null on default
+  final String? qrId;                   // FK -> qr/{qr_id}; null on default
   final DateTime createdAt;
 
   PermitModel({
@@ -103,10 +103,14 @@ class PermitModel {
     };
   }
 
-  // Typed reference to permits/{permit_id}; reads return PermitModel, writes accept it
-  static CollectionReference<PermitModel> get collection =>
-      FirebaseFirestore.instance.collection('permits').withConverter<PermitModel>(
+  // Typed reference to permits/{permit_id} on the given Firestore
+  static CollectionReference<PermitModel> collectionOf(FirebaseFirestore db) =>
+      db.collection('permits').withConverter<PermitModel>(
             fromFirestore: PermitModel.fromFirestore,
             toFirestore: (permit, _) => permit.toFirestore(),
           );
+
+  // Same reference on the default Firestore instance
+  static CollectionReference<PermitModel> get collection =>
+      collectionOf(FirebaseFirestore.instance);
 }
