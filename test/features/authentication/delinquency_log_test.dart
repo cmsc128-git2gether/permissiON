@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:permission_app/features/authentication/domain/deliquency_log_model.dart';
+import 'package:permission_app/features/authentication/domain/delinquency_log_model.dart';
 
 
 void main() {
@@ -16,7 +16,7 @@ void main() {
         id: 'd1',
         userId: 'u1',
         permitId: 'p1',
-        violationType: 'LATE CHECK IN',
+        violationType: ViolationType.lateCheckIn,
         violationDescription: 'Returned 2 hours late',
         reportedBy: 'admin1',
         createdAt: DateTime.utc(2026, 10, 31),
@@ -39,7 +39,7 @@ void main() {
             id: 'd1',
             userId: 'u1',
             permitId: 'p1',
-            violationType: 'LATE CHECK IN',
+            violationType: ViolationType.lateCheckIn,
             violationDescription: 'Returned 2 hours late',
             reportedBy: 'admin1',
             createdAt: created,
@@ -49,7 +49,7 @@ void main() {
       expect(loaded.id, 'd1');
       expect(loaded.userId, 'u1');
       expect(loaded.permitId, 'p1');
-      expect(loaded.violationType, 'LATE CHECK IN');
+      expect(loaded.violationType, ViolationType.lateCheckIn);
       expect(loaded.violationDescription, 'Returned 2 hours late');
       expect(loaded.reportedBy, 'admin1');
       expect(loaded.createdAt!.toUtc(), created);
@@ -60,7 +60,7 @@ void main() {
       await col.doc('d2').set(DelinquencyLogModel(
             id: 'd2',
             userId: 'u1',
-            violationType: 'NO FILED PERMIT',
+            violationType: ViolationType.noFiledPermit,
             violationDescription: 'Not in room during check',
           ));
 
@@ -74,7 +74,7 @@ void main() {
       await col.doc('d3').set(DelinquencyLogModel(
             id: 'd3',
             userId: 'u1',
-            violationType: 'LATE CHECK IN',
+            violationType: ViolationType.lateCheckIn,
             violationDescription: '',
           ));
 
