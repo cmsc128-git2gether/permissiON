@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0"
+  },
+  "scripts" : {
+    "emulators": "npx kill-port 8080 4000 5001s"
+  }
+}
