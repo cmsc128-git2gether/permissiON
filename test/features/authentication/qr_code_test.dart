@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:permission_app/features/authentication/domain/qr_model.dart';
 
 QrCodeModel buildQr({
-  String status = QrStatus.active,
+  QrStatus status = QrStatus.active,
   DateTime? expiresAt,
   DateTime? scannedAt,
   String? scannedBy,
