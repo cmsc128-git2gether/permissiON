@@ -1,3 +1,5 @@
+import { setLogLevel } from 'firebase/firestore';
+setLogLevel('silent');
 import { readFileSync } from 'fs';
 import { test, before, after, beforeEach } from 'node:test';
 import {
@@ -14,7 +16,7 @@ before(async () => {
     projectId: 'demo-test', // "demo-" prefix to ensure demo test
     firestore: {
       rules: readFileSync('firestore.rules', 'utf8'),
-      host: '127.0.0.1',
+      host: "127.0.0.1",
       port: 8080,
     },
   });
@@ -174,10 +176,29 @@ test('admin cannot set an invalid status', async () => {
   );
 });
 
-test('student cannot update a permit', async () => {
-  await assertFails(
-    updateDoc(doc(as('student1'), 'permits/p1'), { status: 'ACTIVE' })
-  );
+test('student can cancel own PENDING permit', async () => {
+  await assertSucceeds(as('student1').doc('permits/p1').update({ status: 'CANCELLED' }));
+});
+
+test('student cannot set any other status', async () => {
+  await assertFails(as('student1').doc('permits/p1').update({ status: 'ACTIVE' }));
+});
+
+test('student cannot cancel someone else\'s permit', async () => {
+  await assertFails(as('student2').doc('permits/p1').update({ status: 'CANCELLED' }));
+});
+
+test('student cannot change other fields while cancelling', async () => {
+  await assertFails(as('student1').doc('permits/p1').update({
+    status: 'CANCELLED', type: 'WEEKEND',
+  }));
+});
+
+test('student cannot cancel a COMPLETED permit', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc('permits/p1').update({ status: 'COMPLETED' });
+  });
+  await assertFails(as('student1').doc('permits/p1').update({ status: 'CANCELLED' }));
 });
 
 //=== QR: READ ===
