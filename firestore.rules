@@ -48,10 +48,16 @@ service cloud.firestore {
         && isValidPermit();
       allow read: if isAuthenticated() 
         && (resource.data.user_id == request.auth.uid || isAdmin());
-      allow update: if isAdmin()
+      allow update: if (isAdmin()
         && request.resource.data.user_id == resource.data.user_id
         && request.resource.data.status in 
-        ['PENDING', 'ACTIVE', 'CANCELLED', 'DENIED', 'COMPLETED', 'OVERDUE'];
+        ['PENDING', 'ACTIVE', 'CANCELLED', 'DENIED', 'COMPLETED', 'OVERDUE'])
+        // permit owner can cancel
+        || (isEndUser()
+        && resource.data.user_id == request.auth.uid
+        && resource.data.status in ['PENDING', 'ACTIVE']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'CANCELLED');
     }
     match /qr/{qrId} {
       allow read: if isAuthenticated()
