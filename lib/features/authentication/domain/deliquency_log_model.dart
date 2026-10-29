@@ -2,13 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Model for a delinquency record, stored at delinquency_logs/{delinquency_id}
 class DelinquencyLogModel {
-  final String id; // Firestore doc ID (delinquency_id)
-  final String userId; // FK -> users/{user_id} (the delinquent end user)
-  final String? permitId; // FK -> permits/{permit_id}; null for NO FILED PERMIT
-  final String violationType; // e.g. 'LATE CHECK IN', 'NO FILED PERMIT'
+  final String id;                    // Firestore doc ID (delinquency_id)
+  final String userId;                // FK -> users/{user_id} (the delinquent end user)
+  final String? permitId;             // FK -> permits/{permit_id}; null for NO FILED PERMIT
+  final String violationType;         // e.g. 'LATE CHECK IN', 'NO FILED PERMIT'
   final String violationDescription;
-  final String? reportedBy; // FK -> users/{admin_id}; null if system-generated
-  final DateTime? createdAt; // Null until the server timestamp resolves
+  final String? reportedBy;           // FK -> users/{admin_id}; null if system-generated
+  final DateTime? createdAt;          // Null until the server timestamp resolves
 
   DelinquencyLogModel({
     required this.id,
@@ -51,10 +51,14 @@ class DelinquencyLogModel {
     };
   }
 
-  // Typed reference to delinquency_logs/{delinquency_id}; reads return DelinquencyLogModel, writes accept it
-  static CollectionReference<DelinquencyLogModel> get collection =>
-      FirebaseFirestore.instance.collection('delinquency_logs').withConverter<DelinquencyLogModel>(
+  // Typed reference to delinquency_logs/{delinquency_id} on the given Firestore (inject a fake in tests)
+  static CollectionReference<DelinquencyLogModel> collectionOf(FirebaseFirestore db) =>
+      db.collection('delinquency_logs').withConverter<DelinquencyLogModel>(
             fromFirestore: DelinquencyLogModel.fromFirestore,
             toFirestore: (log, _) => log.toFirestore(),
           );
+
+  // Same reference on the default Firestore instance
+  static CollectionReference<DelinquencyLogModel> get collection =>
+      collectionOf(FirebaseFirestore.instance);
 }

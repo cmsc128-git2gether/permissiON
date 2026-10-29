@@ -9,14 +9,14 @@ class QrStatus {
 
 // Model for a QR code, stored at qr/{qr_id}
 class QrCodeModel {
-  final String id; // Firestore doc ID (qr_id)
-  final String permitId; // FK -> permits/{permit_id}
-  final String adminId; // FK -> users/{admin_id} (admin who issued it)
-  final String status; // 'ACTIVE' | 'SCANNED' | 'CANCELLED'
+  final String id;            // Firestore doc ID (qr_id)
+  final String permitId;      // FK -> permits/{permit_id}
+  final String adminId;       // FK -> users/{admin_id} (admin who issued it)
+  final String status;        // 'ACTIVE' | 'SCANNED' | 'CANCELLED'
   final DateTime createdAt;
   final DateTime expiresAt;
-  final DateTime? scannedAt; // Null on default
-  final String? scannedBy; // FK -> users/{user_id}; null until scanned
+  final DateTime? scannedAt;  // Null on default
+  final String? scannedBy;    // FK -> users/{user_id}; null until scanned
 
   QrCodeModel({
     required this.id,
@@ -63,10 +63,14 @@ class QrCodeModel {
     };
   }
 
-  // Typed reference to qr/{qr_id}; reads return QrCodeModel, writes accept it
-  static CollectionReference<QrCodeModel> get collection =>
-      FirebaseFirestore.instance.collection('qr').withConverter<QrCodeModel>(
+  // Typed reference to qr/{qr_id} on the given Firestore for test
+  static CollectionReference<QrCodeModel> collectionOf(FirebaseFirestore db) =>
+      db.collection('qr').withConverter<QrCodeModel>(
             fromFirestore: QrCodeModel.fromFirestore,
             toFirestore: (qr, _) => qr.toFirestore(),
           );
+
+  // Same reference on the default Firestore instance
+  static CollectionReference<QrCodeModel> get collection =>
+      collectionOf(FirebaseFirestore.instance);
 }
