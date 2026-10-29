@@ -15,31 +15,78 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && getUserData().access_level == 'admin';
     }
+    function isEndUser() {
+      return isAuthenticated() && getUserData().access_level == 'end_user';
+    }
+    function isValidPermit() {
+      let data = request.resource.data;
+      return data.user_id == request.auth.uid 
+        && data.type in ['LATE', 'OVERNIGHT', 'WEEKEND']
+        && data.status == 'PENDING';
+    }
+    function isPermitOwner(permitId) {
+      return get(/databases/$(database)/documents/permits/$(permitId)).data.user_id == request.auth.uid;
+    }
 
     //=== RULES FOR COLLECTIONS ===
     match /users/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
     }
     match /admin_profiles/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isOwner(userId) && getUserData().access_level == 'admin';
+      allow read: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) && isAdmin();
     }
     match /end_user_profiles/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId);
+      allow update: if isOwner(userId) && isEndUser();
+      allow delete: if isAdmin();
     }
     match /permits/{permitId} {
-      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
-      allow update: if isAdmin();
+      allow create: if isAuthenticated() 
+        && isEndUser()
+        && isValidPermit();
+      allow read: if isAuthenticated() 
+        && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow update: if (isAdmin()
+        && request.resource.data.user_id == resource.data.user_id
+        && request.resource.data.status in 
+        ['PENDING', 'ACTIVE', 'CANCELLED', 'DENIED', 'COMPLETED', 'OVERDUE'])
+        // permit owner can cancel
+        || (isEndUser()
+        && resource.data.user_id == request.auth.uid
+        && resource.data.status in ['PENDING', 'ACTIVE']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'CANCELLED');
     }
     match /qr/{qrId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAdmin();
+      allow read: if isAuthenticated()
+        && (isAdmin() || isPermitOwner(resource.data.permit_id));
+      allow create: if isAdmin()
+        && request.resource.data.admin_id == request.auth.uid
+        && request.resource.data.status == 'ACTIVE'
+        && request.resource.data.scanned_at == null
+        && request.resource.data.scanned_by == null
+        && request.resource.data.expires_at > request.time;
+      allow update: if (isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'CANCELLED')
+        // permit owner can scan 
+        || (isEndUser()
+        && isPermitOwner(resource.data.permit_id)
+        && resource.data.status == 'ACTIVE'
+        && resource.data.expires_at > request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'scanned_at', 'scanned_by'])
+        && request.resource.data.status == 'SCANNED'
+        && request.resource.data.scanned_by == request.auth.uid
+        && request.resource.data.scanned_at == request.time);
+      allow delete: if false;
     }
     match /delinquency_logs/{logId} {
-      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
-      allow write: if isAdmin();
+      allow read: if isAuthenticated() 
+        && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create, update, delete: if isAdmin();
     }
   }
 }
