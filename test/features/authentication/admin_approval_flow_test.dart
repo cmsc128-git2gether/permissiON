@@ -13,7 +13,7 @@ void main() {
   final admin = AppUser(uid: 'admin1', email: 'admin@x.com', accessLevel: 'admin');
   final resident = AppUser(uid: 'u1', email: 'u@x.com', accessLevel: 'end_user');
 
-  Future<void> seedPermit({String status = PermitStatus.pending}) {
+  Future<void> seedPermit({PermitStatus status = PermitStatus.pending}) {
     return PermitModel.collectionOf(db).doc('p1').set(PermitModel(
           id: 'p1',
           userId: 'u1',
@@ -44,7 +44,7 @@ void main() {
       await service.approvePermit(permitId: 'p1', admin: admin);
 
       final data = await rawPermit();
-      expect(data['permit_status'], PermitStatus.active);
+      expect(data['permit_status'], PermitStatus.active.value);
       expect(data['approved_by'], 'admin1');
       expect(data['approved_at'], isA<Timestamp>());
     });
@@ -57,7 +57,7 @@ void main() {
       );
 
       final data = await rawPermit();
-      expect(data['permit_status'], PermitStatus.pending);
+      expect(data['permit_status'], PermitStatus.pending.value);
       expect(data['approved_by'], isNull);
     });
 
@@ -67,7 +67,7 @@ void main() {
         service.approvePermit(permitId: 'p1', admin: admin),
         throwsA(isA<PermitActionException>()),
       );
-      expect((await rawPermit())['permit_status'], PermitStatus.cancelled);
+      expect((await rawPermit())['permit_status'], PermitStatus.cancelled.value);
     });
 
     test('rejects a second action on an already-approved permit', () async {
@@ -77,7 +77,7 @@ void main() {
         service.denyPermit(permitId: 'p1', admin: admin),
         throwsA(isA<PermitActionException>()),
       );
-      expect((await rawPermit())['permit_status'], PermitStatus.active);
+      expect((await rawPermit())['permit_status'], PermitStatus.active.value);
     });
 
     test('throws when the permit does not exist', () async {
@@ -94,7 +94,7 @@ void main() {
       await service.denyPermit(permitId: 'p1', admin: admin);
 
       final data = await rawPermit();
-      expect(data['permit_status'], PermitStatus.denied);
+      expect(data['permit_status'], PermitStatus.denied.value);
       expect(data['approved_by'], 'admin1');
       expect(data['approved_at'], isA<Timestamp>());
     });
@@ -105,7 +105,7 @@ void main() {
         service.denyPermit(permitId: 'p1', admin: resident),
         throwsA(isA<PermitActionException>()),
       );
-      expect((await rawPermit())['permit_status'], PermitStatus.pending);
+      expect((await rawPermit())['permit_status'], PermitStatus.pending.value);
     });
   });
 }
