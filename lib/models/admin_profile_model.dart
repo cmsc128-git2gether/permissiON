@@ -1,10 +1,10 @@
-///admin_profile_model.dart
-///
-///This file defines the data class AdminProfileModel for the `admin_profiles/{user_id}` collection path. 
-///This file contains the following:
-/// - AdminPosition, an enum of the positions an admin can hold, each with label that is also a string stored in Firestore. 
-/// - AdminProfileModel, an immutable class representing a single admin's profile, with JSON deserialization, and JSON 
-///   serialization for reading from, and writing to Firestore.
+//admin_profile_model.dart
+//
+//This file defines the data class AdminProfileModel for the `admin_profiles/{user_id}` collection path. 
+//This file contains the following:
+// - AdminPosition, an enum of the positions an admin can hold, each with label that is also a string stored in Firestore. 
+// - AdminProfileModel, an immutable class representing a single admin's profile, with JSON deserialization, and JSON 
+//   serialization for reading from, and writing to Firestore.
 
 /// The positions an admin can hold within the dormitory.
 ///
