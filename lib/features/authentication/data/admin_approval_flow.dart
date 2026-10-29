@@ -48,7 +48,7 @@ class PermitAdminService {
   Future<void> _decide({
     required String permitId,
     required AppUser admin,
-    required String newStatus,
+    required PermitStatus newStatus,   // was: required String newStatus
   }) async {
     if (!admin.isAdmin) {
       throw PermitActionException('Only admins can approve or deny permits.');
@@ -65,12 +65,12 @@ class PermitAdminService {
       }
       if (permit.permitStatus != PermitStatus.pending) {
         throw PermitActionException(
-          'Permit is already ${permit.permitStatus}; only PENDING permits can be acted on.',
+          'Permit is already ${permit.permitStatus.value}; only PENDING permits can be acted on.',
         );
       }
 
       transaction.update(ref, {
-        'permit_status': newStatus,
+        'permit_status': newStatus.value,
         'approved_by': admin.uid,
         'approved_at': FieldValue.serverTimestamp(),
       });
