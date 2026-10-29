@@ -1,23 +1,32 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Allowed values for qr status
-class QrStatus {
-  static const active = 'ACTIVE';
-  static const scanned = 'SCANNED';
-  static const cancelled = 'CANCELLED';
+// qr status
+enum QrStatus {
+  active('ACTIVE'),
+  scanned('SCANNED'),
+  cancelled('CANCELLED');
+
+  // constructor storing the string passed to value
+  const QrStatus(this.value);
+  final String value; // to firestore
+
+  static QrStatus fromString(String db) => values.firstWhere(
+        (e) => e.value == db,
+        orElse: () => throw ArgumentError('Invalid QrStatus: $db'),
+      );
 }
 
 // Model for a QR code, stored at qr/{qr_id}
 class QrCodeModel {
-  final String id;            // Firestore doc ID (qr_id)
-  final String permitId;      // FK -> permits/{permit_id}
-  final String adminId;       // FK -> users/{admin_id} (admin who issued it)
-  final String status;        // 'ACTIVE' | 'SCANNED' | 'CANCELLED'
+  final String id;                    // Firestore doc ID (qr_id)
+  final String permitId;              // FK -> permits/{permit_id}
+  final String adminId;               // FK -> users/{admin_id} (admin who approved)
+  final QrStatus status;              // Defaults to QrStatus.active
   final DateTime createdAt;
   final DateTime expiresAt;
-  final DateTime? scannedAt;  // Null on default
-  final String? scannedBy;    // FK -> users/{user_id}; null until scanned
-
+  final DateTime? scannedAt;          // null until scanned
+  final String? scannedBy;            // FK -> users/{user_id}; null until scanned
+  
   QrCodeModel({
     required this.id,
     required this.permitId,
@@ -29,7 +38,7 @@ class QrCodeModel {
     this.scannedBy,
   });
 
-  // Returns True if this QR can still be scanned
+  // A QR is valid only while ACTIVE and not yet expired
   bool get isValid =>
       status == QrStatus.active && DateTime.now().isBefore(expiresAt);
 
@@ -43,7 +52,7 @@ class QrCodeModel {
       id: snapshot.id,
       permitId: data['permit_id'] ?? '',
       adminId: data['admin_id'] ?? '',
-      status: data['status'] ?? QrStatus.active,
+      status: QrStatus.fromString(data['status'] ?? QrStatus.active.value),
       createdAt: (data['created_at'] as Timestamp).toDate(),
       expiresAt: (data['expires_at'] as Timestamp).toDate(),
       scannedAt: (data['scanned_at'] as Timestamp?)?.toDate(),
@@ -51,19 +60,21 @@ class QrCodeModel {
     );
   }
 
+  // Converts to a Firestore map; the doc ID is not stored as a field
   Map<String, dynamic> toFirestore() {
     return {
       'permit_id': permitId,
       'admin_id': adminId,
-      'status': status,
+      'status': status.value,
       'created_at': Timestamp.fromDate(createdAt),
       'expires_at': Timestamp.fromDate(expiresAt),
-      'scanned_at': scannedAt == null ? null : Timestamp.fromDate(scannedAt!),
+      'scanned_at':
+          scannedAt == null ? null : Timestamp.fromDate(scannedAt!),
       'scanned_by': scannedBy,
     };
   }
 
-  // Typed reference to qr/{qr_id} on the given Firestore for test
+  // Typed reference to qr/{qr_id}
   static CollectionReference<QrCodeModel> collectionOf(FirebaseFirestore db) =>
       db.collection('qr').withConverter<QrCodeModel>(
             fromFirestore: QrCodeModel.fromFirestore,
