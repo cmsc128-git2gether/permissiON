@@ -1,20 +1,38 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Allowed values for permit_type
-class PermitType {
-  static const late = 'LATE';
-  static const overnight = 'OVERNIGHT';
-  static const weekend = 'WEEKEND';
+// Permit types
+enum PermitType {
+  late('LATE'),
+  overnight('OVERNIGHT'),
+  weekend('WEEKEND');
+
+  // constructor storing the string passed to value
+  const PermitType(this.value);
+  final String value; // to firestore
+
+  static PermitType fromString(String db) => values.firstWhere(
+        (e) => e.value == db,
+        orElse: () => throw ArgumentError('Invalid PermitType: $db'),
+      );
 }
 
-// Allowed values for permit_status
-class PermitStatus {
-  static const pending = 'PENDING';
-  static const active = 'ACTIVE';
-  static const cancelled = 'CANCELLED';
-  static const completed = 'COMPLETED';
-  static const overdue = 'OVERDUE';
-  static const denied = 'DENIED';
+// permit status
+enum PermitStatus {
+  pending('PENDING'),
+  cancelled('CANCELLED'),
+  active('ACTIVE'),
+  denied('DENIED'),
+  completed('COMPLETED'),
+  overdue('OVERDUE');
+
+  // constructor storing the string passed to value
+  const PermitStatus(this.value);
+  final String value; // to firestore
+
+  static PermitStatus fromString(String db) => values.firstWhere(
+        (e) => e.value == db,
+        orElse: () => throw ArgumentError('Invalid PermitStatus: $db'),
+      );
 }
 
 // Model for a permit, stored at permits/{permit_id}
@@ -23,14 +41,14 @@ class PermitModel {
   final String userId;                // FK -> users/{user_id} (the end user who filed it)
   final String fullName;              // Copied from end_user_profiles at filing time
   final String roomNum;
-  final String permitType;            // 'LATE' | 'OVERNIGHT' | 'WEEKEND'
+  final PermitType permitType;
   final String destination;
   final String purpose;
   final String emergencyContactPerson;
   final String emergencyContactNum;
   final DateTime expectedTimeIn;
   final DateTime? actualTimeIn;       // Set from qr.scanned_at; null on default
-  final String permitStatus;          // Defaults to 'PENDING'
+  final PermitStatus permitStatus;    // Defaults to PermitStatus.pending
   final String? approvedBy;           // FK -> users/{admin_id}; null until acted on
   final DateTime? approvedAt;
   final String? qrId;                 // FK -> qr/{qr_id}; null on default
@@ -66,14 +84,16 @@ class PermitModel {
       userId: data['user_id'] ?? '',
       fullName: data['full_name'] ?? '',
       roomNum: data['room_num'] ?? '',
-      permitType: data['permit_type'] ?? PermitType.late,
+      permitType:
+          PermitType.fromString(data['permit_type'] ?? PermitType.late.value),
       destination: data['destination'] ?? '',
       purpose: data['purpose'] ?? '',
       emergencyContactPerson: data['emergency_contact_person'] ?? '',
       emergencyContactNum: data['emergency_contact_num'] ?? '',
       expectedTimeIn: (data['expected_time_in'] as Timestamp).toDate(),
       actualTimeIn: (data['actual_time_in'] as Timestamp?)?.toDate(),
-      permitStatus: data['permit_status'] ?? PermitStatus.pending,
+      permitStatus: PermitStatus.fromString(
+          data['permit_status'] ?? PermitStatus.pending.value),
       approvedBy: data['approved_by'],
       approvedAt: (data['approved_at'] as Timestamp?)?.toDate(),
       qrId: data['qr_id'],
@@ -87,7 +107,7 @@ class PermitModel {
       'user_id': userId,
       'full_name': fullName,
       'room_num': roomNum,
-      'permit_type': permitType,
+      'permit_type': permitType.value,
       'destination': destination,
       'purpose': purpose,
       'emergency_contact_person': emergencyContactPerson,
@@ -95,7 +115,7 @@ class PermitModel {
       'expected_time_in': Timestamp.fromDate(expectedTimeIn),
       'actual_time_in':
           actualTimeIn == null ? null : Timestamp.fromDate(actualTimeIn!),
-      'permit_status': permitStatus,
+      'permit_status': permitStatus.value,
       'approved_by': approvedBy,
       'approved_at': approvedAt == null ? null : Timestamp.fromDate(approvedAt!),
       'qr_id': qrId,
