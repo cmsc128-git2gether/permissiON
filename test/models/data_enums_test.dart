@@ -50,4 +50,12 @@ void main() {
             }
         });
     });
+
+    group('ViolationType', () {
+        test('round trip for every case', () {
+            for (final s in ViolationType.values) {
+            expect(ViolationType.fromString(s.value), s);
+            }
+        });
+    });
 }
