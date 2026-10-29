@@ -76,7 +76,7 @@ permits/{permit_id}
 	destination, purpose, emergency_contact_person, emergency_contact_num
 	expected_time_in: TIMESTAMP
 	actual_time_in: TIMESTAMP | NULL (QUERIES FROM SCANNED QR)
-	permit_status: "PENDING" | "ACTIVE" | "CANCELLED" | "COMPLETED" | "OVERDUE" | "DISAPPROVED"
+	permit_status: "PENDING" | "ACTIVE" | "CANCELLED" | "COMPLETED" | "OVERDUE" | "DENIED"
 	approved_by: admin_id, approved_at: TIMESTAMP | NULL
 	qr_id: STRING | NULL
 	created_at: TIMESTAMP
