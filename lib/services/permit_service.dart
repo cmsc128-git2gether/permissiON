@@ -3,7 +3,33 @@ import '../models/data_enums.dart';
 import '../models/permit_model.dart';
 
 class PermitService {
+ //------------- contract stubs: signatures only --------------------
+// this method is placeholder for now, but will be implemented in the future
+  
+  //admin history of all permits to be implemented in issue #42, for now returns empty list
+  Stream<List<PermitModel>> listenToAllPermits() => Stream.value(const []);
 
+  //detail view of a single permit to be implemented in issue #41, for now returns null
+  Stream<PermitModel?> listenToPermit(String permitId) => Stream.value(null);
+
+  //admin history of all pending permits to be implemented in issue #43, for now returns empty list
+    Stream<List<PermitModel>> listenToPendingPermits() => Stream.value(const []);
+
+  //user cancels a pending permit to be implemented in issue #43, for now throws unimplemented error
+  Future<void> cancelPermit(String userId, String permitId) async {
+    throw UnimplementedError('cancelPermit');
+  }
+
+  //admin manual override of a permit's status, for now throws unimplemented error
+  Future<void> recordTimeIn(
+    String adminId,
+    String permitId, {
+    DateTime? at,
+  }) async {
+    throw UnimplementedError('recordTimeIn');
+  }
+
+// ----------------------------------------------------------------------------
 
   //optional firestore instance for testing, otherwise use default
   PermitService({FirebaseFirestore? firestore})

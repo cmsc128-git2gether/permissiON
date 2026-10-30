@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../domain/user_model.dart';
+import 'package:permission_app/errors/auth_failure.dart';
 
 // Handles login state and loads the user's role
 class AuthRepository {
@@ -11,6 +12,17 @@ class AuthRepository {
   AuthRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
     : _auth = auth ?? FirebaseAuth.instance,
       _firestore = firestore ?? FirebaseFirestore.instance;
+
+
+  //--- sign in and sign up to be implemented in issue #36, for now throws unimplemented error ---
+  Future<void> signIn({required String email, required String password}) async {
+    throw UnimplementedError('signIn');
+  }
+
+  Future<void> signUp({required String email, required String password}) async {
+    throw UnimplementedError('signUp');
+  }
+  // ----------------------------------------------------------------------------------------------
 
   // Gives an AppUser (with role) when someone logs in, or null when they log out
   Stream<AppUser?> get authStateStream {
