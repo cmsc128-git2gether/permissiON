@@ -1,27 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_app/models/data_enums.dart';
 
-// // violation types
-// enum ViolationType {
-//   lateCheckIn('LATE CHECK IN'),
-//   noFiledPermit('NO FILED PERMIT');
-
-//   // constructor storing the string passed to value
-//   const ViolationType(this.value);
-//   final String value; // to firestore
-
-//   static ViolationType fromString(String db) => values.firstWhere(
-//         (e) => e.value == db,
-//         orElse: () => throw ArgumentError('Invalid ViolationType: $db'),
-//       );
-// }
 
 // Model for a delinquency log, stored at delinquency_logs/{delinquency_id}
 class DelinquencyLogModel {
   final String id;                    // Firestore doc ID (delinquency_id)
   final String userId;                // FK -> users/{user_id}
   final String? permitId;             // FK -> permits/{permit_id}; null for NO FILED PERMIT
-  // final ViolationType violationType;
+  final ViolationType violationType;
   final String violationDescription;
   final String? reportedBy;           // FK -> users/{admin_id}; null if system-generated
   final DateTime? createdAt;          // null on create -> server timestamp is written
@@ -30,7 +16,7 @@ class DelinquencyLogModel {
     required this.id,
     required this.userId,
     this.permitId,
-    // required this.violationType,
+    required this.violationType,
     required this.violationDescription,
     this.reportedBy,
     this.createdAt,
@@ -50,7 +36,7 @@ class DelinquencyLogModel {
           data['violation_type'] ?? ViolationType.lateCheckIn.value),
       violationDescription: data['violation_description'] ?? '',
       reportedBy: data['reported_by'],
-      createdAt: (data['created_at'] as Timestamp?)?.toDate(),
+      createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
