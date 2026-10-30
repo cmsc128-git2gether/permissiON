@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:clock/clock.dart'; // injects clock
 import '../models/data_enums.dart';
 import '../models/permit_model.dart';
+import '../utils/firestore_utils.dart';
+// import '../models/qr_model.dart';
 
 class PermitService {
  //------------- contract stubs: signatures only --------------------
@@ -21,12 +24,47 @@ class PermitService {
   }
 
   //admin manual override of a permit's status, for now throws unimplemented error
+  // issue #44
   Future<void> recordTimeIn(
-    String adminId,
+    // String adminId,
+    // adminId only exists in QR codes
     String permitId, {
     DateTime? at,
   }) async {
-    throw UnimplementedError('recordTimeIn');
+    // validates time is not future
+    if (at != null && at.isAfter(clock.now())) {
+      throw ArgumentError('Time-in cannot be in the future.');
+    }
+
+    final ref = _permits.doc(permitId);
+    // final qr = _db.collection(qrId);
+    // jic of using the qr
+
+    // transaction
+    await _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+
+      // failure messages, StateErrors
+      // missing permit
+      if (!snapshot.exists) {
+        throw StateError('Permit $permitId does not exist');
+      }
+      // non-ACTIVE permit
+      if (snapshot.data()!['permit_status'] != PermitStatus.active.value) {
+        throw StateError('Only ACTIVE permits can have a recorded time-in.');
+      }
+      // already has a time-in
+      if (snapshot.data()!['actual_time_in'] != null) {
+        throw StateError('Permit $permitId already has a recorded time-in.');
+      }
+
+      //write
+      transaction.update(ref, {
+        'actual_time_in': at != null ? toTimestamp(at) : FieldValue.serverTimestamp(),
+        'permit_status':PermitStatus.completed.value,
+      });
+    });
+
   }
 
 // ----------------------------------------------------------------------------
