@@ -1,5 +1,5 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // added another import
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,7 +26,7 @@ void main() {
 
     test(
       'authStateStream emits AppUser with admin access_level on admin login',
-      () async {
+          () async {
         const uid = 'admin_user_01';
         const email = 'admin@school.edu';
 
@@ -56,7 +56,7 @@ void main() {
 
     test(
       'authStateStream emits AppUser with end_user access_level on student login',
-      () async {
+          () async {
         const uid = 'student_user_01';
         const email = 'student@school.edu';
 
@@ -167,8 +167,59 @@ void main() {
         ),
       );
     });
-  }); // closes group(...)
-}     // closes main()
+
+    // createAdminAccount guard paths (these throw before any static
+    // Firebase.initializeApp call, so the mocks are sufficient)
+    test('createAdminAccount throws unauthenticated when signed out', () async {
+      final mockAuth = MockFirebaseAuth(signedIn: false);
+      final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
+
+      await expectLater(
+        repository.createAdminAccount(
+          email: 'new@admin.edu',
+          password: 'password123',
+        ),
+        throwsA(
+          isA<FirebaseAuthException>()
+              .having((e) => e.code, 'code', 'unauthenticated'),
+        ),
+      );
+    });
+
+    test('createAdminAccount throws permission-denied for end_user', () async {
+      const uid = 'student_user_01';
+      await fakeFirestore.collection('users').doc(uid).set({
+        'access_level': 'end_user',
+      });
+
+      final mockAuth = MockFirebaseAuth(
+        mockUser: MockUser(uid: uid, email: 'student@school.edu'),
+        signedIn: true,
+      );
+      final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
+
+      await expectLater(
+        repository.createAdminAccount(
+          email: 'new@admin.edu',
+          password: 'password123',
+        ),
+        throwsA(
+          isA<FirebaseAuthException>()
+              .having((e) => e.code, 'code', 'permission-denied')
+              .having(
+                (e) => e.message,
+            'message',
+            'Only admins can create admin accounts.',
+          ),
+        ),
+      );
+
+      // No new profile should have been created.
+      final users = await fakeFirestore.collection('users').get();
+      expect(users.docs.length, 1);
+    });
+  });
+}
 
 class _ThrowingAuth extends MockFirebaseAuth {
   _ThrowingAuth(this._error);
