@@ -8,6 +8,8 @@ import '../features/authentication/presentation/auth_notifier.dart';
 import '../features/authentication/presentation/admin_dashboard.dart';
 import '../features/authentication/presentation/dormer_dashboard.dart';
 import '../features/authentication/presentation/login_screen.dart';
+import 'package:flutter/widget_previews.dart';
+
 
 // Decides where a user should be, given auth status and current location.
 // Kept as a pure function so it can be unit tested without Firebase.
@@ -65,4 +67,9 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
+}
+//Preview of the Splash Screen
+@Preview(name: 'Splash Screen Preview')
+Widget splashScreenPreview() {
+  return const SplashScreen();
 }
