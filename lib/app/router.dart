@@ -7,6 +7,7 @@ import '../features/authentication/domain/user_model.dart';
 import '../features/presentation/admin_dashboard.dart';
 import '../features/presentation/dormer_dashboard.dart';
 import '../features/presentation/login_screen.dart';
+import '../features/presentation/admin_permit_history_screen.dart';
 
 // Sets up the app's pages and decides who can see which page
 GoRouter createRouter(Stream<AppUser?> authStream) {
@@ -38,6 +39,10 @@ GoRouter createRouter(Stream<AppUser?> authStream) {
         path: '/admin',
         builder: (context, state) => const AdminDashboardScreen(),
       ),
+      GoRoute(
+        path: '/admin/permit-history',
+        builder: (context, state) => const AdminPermitHistoryScreen(),
+      ), 
     ],
   );
 }
