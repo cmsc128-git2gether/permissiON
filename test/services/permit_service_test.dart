@@ -167,4 +167,87 @@ group('PermitService: createPermit', () {
       expect(data['disapproval_reason'], 'Invalid curfew time.');
     });
   });
+
+  group('PermitService - cancelPermit', () {
+    const ownerId = 'user_123';
+    const otherId = 'user_999';
+
+    Future<void> seedPermit(
+      String id, {
+      PermitStatus status = PermitStatus.pending,
+      String userId = ownerId,
+    }) async {
+      final permit = createMockPermit(id: id, userId: userId, status: status);
+      await db.collection('permits').doc(id).set(permit.toFirestore());
+    }
+
+    Future<Map<String, dynamic>> load(String id) async =>
+        (await db.collection('permits').doc(id).get()).data()!;
+
+    //=== success ===
+    test('owner cancels a PENDING permit', () async {
+      await seedPermit('p1', status: PermitStatus.pending);
+
+      await permitService.cancelPermit(ownerId, 'p1');
+
+      expect((await load('p1'))['permit_status'], 'CANCELLED');
+    });
+
+    test('owner cancels an ACTIVE permit', () async {
+      await seedPermit('p1', status: PermitStatus.active);
+
+      await permitService.cancelPermit(ownerId, 'p1');
+
+      expect((await load('p1'))['permit_status'], 'CANCELLED');
+    });
+
+    test('cancelling changes only the status field', () async {
+      await seedPermit('p1', status: PermitStatus.pending);
+      final before = await load('p1');
+
+      await permitService.cancelPermit(ownerId, 'p1');
+
+      final after = await load('p1');
+      expect(after['user_id'], before['user_id']);
+      expect(after['type'], before['type']);
+    });
+
+    //=== StateError cases ===
+    test('throws StateError for a missing permit', () async {
+      await expectLater(
+        permitService.cancelPermit(ownerId, 'does_not_exist'),
+        throwsStateError,
+      );
+    });
+
+    test('throws StateError when the permit belongs to another user', () async {
+      await seedPermit('p1', status: PermitStatus.pending);
+
+      await expectLater(
+        permitService.cancelPermit(otherId, 'p1'),
+        throwsStateError,
+      );
+
+      // and nothing was changed
+      expect((await load('p1'))['permit_status'], 'PENDING');
+    });
+
+    for (final status in [
+      PermitStatus.completed,
+      PermitStatus.cancelled,
+      PermitStatus.denied,
+      PermitStatus.overdue,
+    ]) {
+      test('throws StateError for a ${status.value} permit', () async {
+        await seedPermit('p1', status: status);
+
+        await expectLater(
+          permitService.cancelPermit(ownerId, 'p1'),
+          throwsStateError,
+        );
+
+        expect((await load('p1'))['permit_status'], status.value); // unchanged
+      });
+    }
+  });
 }
