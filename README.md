@@ -89,7 +89,8 @@ qr/{qr_id}
 
 delinquency_logs/{delinquency_id}
 	user_id, permit_id
-	violation_type, violation_description
+	violation_type: "LATE CHECK IN" | "NO FILED PERMIT"
+	violation_description
 	reported_by: admin_id | NULL, created_at: TIMESTAMP | NULL
 ```
 

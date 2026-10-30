@@ -94,3 +94,23 @@ enum QrStatus {
         orElse: () => throw ArgumentError('Invalid QR Status: "$db"'),
     );
 }
+
+// violation types
+enum ViolationType {
+    noFiledPermit('NO FILED PERMIT'),
+    lateCheckIn('LATE CHECK IN');
+
+    // constructor storing the string passed to value
+    const ViolationType(this.value);
+    final String value; // to firestore
+
+    // returns the matching enum case
+    // db is the string read from the database ('LATE CHECK IN', 'NO FILED PERMIT')
+    // fromString is not nullable
+    static ViolationType fromString(String db) => values.firstWhere(
+        // test of args matching enums with string literals
+        // whether the stored value == db
+        (e) => e.value == db, 
+        orElse: () => throw ArgumentError('Invalid Violation Type: "$db"'),
+    );
+}
