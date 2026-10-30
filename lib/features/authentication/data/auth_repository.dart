@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../domain/user_model.dart';
-import 'package:permission_app/errors/auth_failure.dart';
 
 // Handles login state and loads the user's role
 class AuthRepository {
