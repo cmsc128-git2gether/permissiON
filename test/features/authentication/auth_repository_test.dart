@@ -100,18 +100,15 @@ void main() {
 
     // Sign Up and Sign In success
     test('signUp creates users/{uid} doc with end_user access_level', () async {
-      // MockFirebaseAuth automatically creates a MockUser when you call createUser
       final mockAuth = MockFirebaseAuth();
       final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
 
       await repository.signUp(email: 'new@student.edu', password: 'password123');
 
-      // Check Firebase Auth
       final currentUser = mockAuth.currentUser;
       expect(currentUser, isNotNull);
       expect(currentUser!.email, 'new@student.edu');
 
-      // Check Firestore
       final docSnapshot = await fakeFirestore
           .collection('users')
           .doc(currentUser.uid)
@@ -123,61 +120,69 @@ void main() {
     });
 
     test('signIn signs the user in', () async {
-        final mockUser = MockUser(uid: 'user_123', email: 'test@test.com');
-        // Start signed out
-        final mockAuth = MockFirebaseAuth(mockUser: mockUser, signedIn: false);
-        final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
+      final mockUser = MockUser(uid: 'user_123', email: 'test@test.com');
+      final mockAuth = MockFirebaseAuth(mockUser: mockUser, signedIn: false);
+      final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
 
-        // Act
-        await repository.signIn(email: 'test@test.com', password: 'anypassword');
+      await repository.signIn(email: 'test@test.com', password: 'anypassword');
 
-        // Assert
-        expect(mockAuth.currentUser, isNotNull);
-        expect(mockAuth.currentUser!.email, 'test@test.com');
+      expect(mockAuth.currentUser, isNotNull);
+      expect(mockAuth.currentUser!.email, 'test@test.com');
     });
 
     test('signIn throws mapped FirebaseAuthException on wrong password', () async {
-        final mockAuth = MockFirebaseAuth(
-            exceptions: {
-                'signInWithEmailAndPassword': FirebaseAuthException(
-                    code: 'wrong-password',
-                    message: 'Raw Firebase message that user should not see',
-              ),
-            },
-          );
+      final mockAuth = _ThrowingAuth(
+        FirebaseAuthException(
+          code: 'wrong-password',
+          message: 'Raw Firebase message that user should not see',
+        ),
+      );
+      final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
 
-        final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
-
-         expect(
-            () => repository.signIn(email: 'test@test.com', password: 'wrong'),
-            throwsA(
-              isA<FirebaseAuthException>()
-                  .having((e) => e.code, 'code', 'wrong-password')
-                  .having((e) => e.message, 'message', 'Incorrect email or password.'),
-            ),
-          );
-        });
+      await expectLater(
+        repository.signIn(email: 'test@test.com', password: 'wrong'),
+        throwsA(
+          isA<FirebaseAuthException>()
+              .having((e) => e.code, 'code', 'wrong-password')
+              .having((e) => e.message, 'message', 'Incorrect email or password.'),
+        ),
+      );
+    });
 
     test('signUp throws mapped FirebaseAuthException on email-already-in-use', () async {
-              final mockAuth = MockFirebaseAuth(
-                exceptions: {
-                  'createUserWithEmailAndPassword': FirebaseAuthException(
-                    code: 'email-already-in-use',
-                    message: 'Raw message',
-                  ),
-                },
-              );
+      final mockAuth = _ThrowingAuth(
+        FirebaseAuthException(
+          code: 'email-already-in-use',
+          message: 'Raw message',
+        ),
+      );
+      final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
 
-              final repository = AuthRepository(auth: mockAuth, firestore: fakeFirestore);
+      await expectLater(
+        repository.signUp(email: 'test@test.com', password: 'password123'),
+        throwsA(
+          isA<FirebaseAuthException>()
+              .having((e) => e.code, 'code', 'email-already-in-use')
+              .having((e) => e.message, 'message', 'That email is already registered.'),
+        ),
+      );
+    });
+  }); // closes group(...)
+}     // closes main()
 
-              expect(
-                () => repository.signUp(email: 'test@test.com', password: 'password123'),
-                throwsA(
-                  isA<FirebaseAuthException>()
-                      .having((e) => e.code, 'code', 'email-already-in-use')
-                      .having((e) => e.message, 'message', 'That email is already registered.'),
-                ),
-              );
-            }); //
-  });
+class _ThrowingAuth extends MockFirebaseAuth {
+  _ThrowingAuth(this._error);
+  final FirebaseAuthException _error;
+
+  @override
+  Future<UserCredential> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async => throw _error;
+
+  @override
+  Future<UserCredential> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async => throw _error;
 }
