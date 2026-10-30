@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // File imports
+import '../features/authentication/data/auth_repository.dart';
 import '../features/authentication/domain/user_model.dart';
 import '../features/presentation/admin_dashboard.dart';
 import '../features/presentation/dormer_dashboard.dart';
 import '../features/presentation/login_screen.dart';
 
 // Sets up the app's pages and decides who can see which page
-GoRouter createRouter(Stream<AppUser?> authStream) {
+GoRouter createRouter(Stream<AppUser?> authStream,
+  AuthRepository authRepository,
+) {
   AppUser? user; // latest known user
   authStream.listen((u) => user = u);
 
@@ -28,8 +31,12 @@ GoRouter createRouter(Stream<AppUser?> authStream) {
     },
 
     // The list of pages in the app
+
     routes: [
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/login', 
+        builder: (context, state) => LoginScreen(authRepository: authRepository),
+        ),
       GoRoute(
         path: '/home',
         builder: (context, state) => const StudentHomeScreen(),
@@ -41,6 +48,8 @@ GoRouter createRouter(Stream<AppUser?> authStream) {
     ],
   );
 }
+
+
 
 // Lets GoRouter listen to a Stream (GoRouter only accepts a Listenable)
 class GoRouterRefreshStream extends ChangeNotifier {
