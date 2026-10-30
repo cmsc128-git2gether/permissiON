@@ -12,7 +12,13 @@ class AuthRepository {
     //Instance variable declarations
     final FirebaseAuth _auth;
     final FirebaseFirestore _firestore;
-
+    /// Signs an existing user in with email and password.
+    ///
+    /// The email is trimmed and lowercased so that "User@Mail.com " and
+    /// "user@mail.com" resolve to the same account.
+    ///
+    /// Throws a [FirebaseAuthException] with a user-friendly message if
+    /// authentication fails.
     Future<void> signIn({required String email, required String password}) async{
         try {
             await _auth.signInWithEmailAndPassword(
@@ -20,43 +26,61 @@ class AuthRepository {
                 password: password,
             );
         } on FirebaseAuthException catch (e) {
+          // Translate Firebase's error codes into app-specific, readable errors.
           throw _mapError(e);
         } on FirebaseException catch (e) {
+          // Fallback for other Firebase errors such as network or backend issues
+          // Show a generic message while original code is kept for debugging, so
+          // internal details are not exposed to the user
           throw FirebaseAuthException(
             code: e.code,
             message: 'Authentication failed. Please try again.',
           );
         }
     }
+    /// Registers a new user and creates their matching Firestore profile.
+    ///
+    /// 2 Step process
+    ///   1. Create the account in Firebase Authentication.
+    ///   2. Save the user's profile document in the `users` collection.
+    ///
+    /// If step 2 fails, the Auth account is deleted so the user is never
+    /// left with an account that has no profile.
     Future<void> signUp({required String email, required String password}) async {
+        // Normalize the email so the same address is always stored the same way.
         final normalized = email.trim().toLowerCase();
         User? user;
+        // create the Firebase Auth account
         try {
             final cred = await _auth.createUserWithEmailAndPassword(
                 email: normalized,
                 password: password,
             );
-            user = cred.user!;
+            user = cred.user!; //non-null after a successful sign-up
         } on FirebaseAuthException catch (e) {
+          // Map known Auth errors
           throw _mapError(e);
         } on FirebaseException catch (e) {
+          // Generic fallback for any other Firebase failure.
           throw FirebaseAuthException(
             code: e.code,
             message: 'Authentication failed. Please try again.',
           );
         }
+        // Create the user's profile document, keyed by their Auth UID.
         try {
             await _firestore.collection('users').doc(user.id).set({
                 'email': normalized,
-                'access_level': 'end_user',
-                'created_at': FieldValue.serverTimestamp(),
+                'access_level': 'end_user', // default role
+                'created_at': FieldValue.serverTimestamp(), // Server-side time avoids client clock issues.
             });
         } catch (_){
             //Roll back, so the email is not stranded in an unusable state.
             await user.delete();
-            rethrow;
+            rethrow; // Let the caller know sign-up failed.
         }
     }
+    /// Signs the current user out of Firebase Authentication.
     Future<void> signOut() => _auth.signOut();
 
 
@@ -99,16 +123,29 @@ class AuthRepository {
       }
     });
   }
+  /// Converts a raw [FirebaseAuthException] into one with a user-friendly message.
+  ///
+  /// The original error code is preserved so callers can still branch on it
+  /// such as to highlight a specific form field, while the message is safe to
+  /// show directly in the UI.
   FirebaseAuthException _mapError(FirebaseAuthException e){
+    // Sign-in failures share one message on purpose. Telling the user whether
+    // the email or the password was wrong would let attackers discover which
+    // emails are registered (user enumeration)
     final message = switch (e.code){
         'invalid-credential' ||
         'wrong-password' ||
         'user-not-found'=> 'Incorrect email or password.',
+        //sign-up errors
         'email-already-in-use' => 'That email is already registered.',
         'weak-password' => 'Password is too weak (min 6 characters).',
+        //applies both signIn and signUp
         'invalid-email' => 'Please enter a valid email address.',
+        // Catch-all for unexpected codes so raw Firebase never reaches the user
         _ => 'Authentication failed. Please try again.',
     };
+    // Rebuild the exception with the friendly message, copying over the
+    // original metadata so debugging information isn't lost.
     return FirebaseAuthException(
         code: e.code,
         message: message,
