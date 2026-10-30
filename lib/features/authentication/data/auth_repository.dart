@@ -5,22 +5,66 @@ import '../domain/user_model.dart';
 
 // Handles login state and loads the user's role
 class AuthRepository {
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
+    //Constructor declaration
+    AuthRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
+        : _auth = auth ?? FirebaseAuth.instance,
+          _firestore = firestore ?? FirebaseFirestore.instance;
+    //Instance variable declarations
+    final FirebaseAuth _auth;
+    final FirebaseFirestore _firestore;
 
-  AuthRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _firestore = firestore ?? FirebaseFirestore.instance;
+    Future<void> signIn({required String email, required String password}) async{
+        try {
+            await _auth.signInWithEmailAndPassword(
+                email: email.trim().toLowerCase(),
+                password: password,
+            );
+        } on FirebaseAuthException catch (e) {
+          throw _mapError(e);
+        } on FirebaseException catch (e) {
+          throw FirebaseAuthException(
+            code: e.code,
+            message: 'Authentication failed. Please try again.',
+          );
+        }
+    }
+    Future<void> signUp({required String email, required String password}) async {
+        final normalized = email.trim().toLowerCase();
+        User? user;
+        try {
+            final cred = await _auth.createUserWithEmailAndPassword(
+                email: normalized,
+                password: password,
+            );
+            user = cred.user!;
+        } on FirebaseAuthException catch (e) {
+          throw _mapError(e);
+        } on FirebaseException catch (e) {
+          throw FirebaseAuthException(
+            code: e.code,
+            message: 'Authentication failed. Please try again.',
+          );
+        }
+        try {
+            await _firestore.collection('users').doc(user.id).set({
+                'email': normalized,
+                'access_level': 'end_user',
+                'created_at': FieldValue.serverTimestamp(),
+            });
+        } catch (_){
+            //Roll back, so the email is not stranded in an unusable state.
+            await user.delete();
+            rethrow;
+        }
+    }
+    Future<void> signOut() => _auth.signOut();
 
 
-  //--- sign in and sign up to be implemented in issue #36, for now throws unimplemented error ---
-  Future<void> signIn({required String email, required String password}) async {
-    throw UnimplementedError('signIn');
-  }
 
-  Future<void> signUp({required String email, required String password}) async {
-    throw UnimplementedError('signUp');
-  }
+
+
+
+
   // ----------------------------------------------------------------------------------------------
 
   // Gives an AppUser (with role) when someone logs in, or null when they log out
@@ -55,6 +99,22 @@ class AuthRepository {
       }
     });
   }
-
-  Future<void> signOut() => _auth.signOut();
+  FirebaseAuthException _mapError(FirebaseAuthException e){
+    final message = switch (e.code){
+        'invalid-credential' ||
+        'wrong-password' ||
+        'user-not-found'=> 'Incorrect email or password.',
+        'email-already-in-use' => 'That email is already registered.',
+        'weak-password' => 'Password is too weak (min 6 characters).',
+        'invalid-email' => 'Please enter a valid email address.',
+        _ => 'Authentication failed. Please try again.',
+    };
+    return FirebaseAuthException(
+        code: e.code,
+        message: message,
+        email: e.mail,
+        plugin: e.plugin,
+        stackTrace: e.stackTrace,
+    );
+  }
 }
