@@ -1,7 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:permission_app/models/data_enums.dart';
 
 import 'package:permission_app/models/qr_model.dart';
+
+// Fixed expiry so no test depends on the real clock as of now
+final expiry = DateTime.utc(2026, 10, 30, 18); // 6:00 PM
 
 QrCodeModel buildQr({
   QrStatus status = QrStatus.active,
@@ -15,26 +20,40 @@ QrCodeModel buildQr({
     adminId: 'admin1',
     status: status,
     createdAt: DateTime.utc(2026, 10, 30, 13),
-    expiresAt: expiresAt ?? DateTime.now().add(const Duration(hours: 6)),
+    expiresAt: expiresAt ?? expiry,
     scannedAt: scannedAt,
     scannedBy: scannedBy,
   );
 }
 
 void main() {
-  group('QrCodeModel.isValid', () {
-    test('true when ACTIVE and not expired', () {
-      expect(buildQr().isValid, isTrue);
+  group('QrCodeModel.isValidAt', () {
+    test('true one minute before expiry (5:59 PM)', () {
+      expect(buildQr().isValidAt(DateTime.utc(2026, 10, 30, 17, 59)), isTrue);
     });
 
-    test('false when expired', () {
-      final qr = buildQr(expiresAt: DateTime.now().subtract(const Duration(minutes: 1)));
-      expect(qr.isValid, isFalse);
+    test('false exactly at expiry', () {
+      expect(buildQr().isValidAt(expiry), isFalse);
     });
 
-    test('false when SCANNED or CANCELLED', () {
-      expect(buildQr(status: QrStatus.scanned).isValid, isFalse);
-      expect(buildQr(status: QrStatus.cancelled).isValid, isFalse);
+    test('false after expiry', () {
+      expect(buildQr().isValidAt(DateTime.utc(2026, 10, 30, 18, 1)), isFalse);
+    });
+
+    test('false when SCANNED or CANCELLED, even before expiry', () {
+      final before = DateTime.utc(2026, 10, 30, 17);
+      expect(buildQr(status: QrStatus.scanned).isValidAt(before), isFalse);
+      expect(buildQr(status: QrStatus.cancelled).isValidAt(before), isFalse);
+    });
+  });
+
+  group('QrCodeModel.isValid (uses the current time)', () {
+    test('true for an ACTIVE QR that expires far in the future', () {
+      expect(buildQr(expiresAt: DateTime.utc(2100)).isValid, isTrue);
+    });
+
+    test('false for a QR that expired long ago', () {
+      expect(buildQr(expiresAt: DateTime.utc(2000)).isValid, isFalse);
     });
   });
 
@@ -68,6 +87,23 @@ void main() {
       expect(loaded.status, QrStatus.scanned);
       expect(loaded.scannedAt!.toUtc(), scanned);
       expect(loaded.scannedBy, 'guard1');
+    });
+
+    test('createdAt falls back to now when created_at is missing', () async {
+      final db = FakeFirebaseFirestore();
+      await db.collection('qr').doc('q2').set({
+        'permit_id': 'p1',
+        'admin_id': 'admin1',
+        'status': 'ACTIVE',
+        'expires_at': Timestamp.fromDate(expiry),
+        // no created_at
+      });
+
+      final loaded = (await QrCodeModel.collectionOf(db).doc('q2').get()).data()!;
+      expect(
+        loaded.createdAt.difference(DateTime.now()).abs(),
+        lessThan(const Duration(seconds: 5)),
+      );
     });
   });
 }

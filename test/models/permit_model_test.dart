@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:permission_app/models/data_enums.dart';
 
 import 'package:permission_app/models/permit_model.dart';
 
@@ -9,6 +10,8 @@ PermitModel buildPermit({
   String? qrId,
   DateTime? actualTimeIn,
   DateTime? approvedAt,
+  PermitStatus status = PermitStatus.pending,
+  String? disapprovalReason,
 }) {
   return PermitModel(
     id: 'p1',
@@ -26,6 +29,8 @@ PermitModel buildPermit({
     approvedAt: approvedAt,
     qrId: qrId,
     createdAt: DateTime.utc(2026, 10, 30, 12),
+    permitStatus: status,
+    disapprovalReason: disapprovalReason,
   );
 }
 
@@ -60,6 +65,7 @@ void main() {
       expect(map['approved_by'], isNull);
       expect(map['approved_at'], isNull);
       expect(map['qr_id'], isNull);
+      expect(map['disapproval_reason'], isNull);   
     });
 
     test('round-trips through the typed collection', () async {
@@ -84,6 +90,44 @@ void main() {
       expect(loaded.approvedAt!.toUtc(), original.approvedAt);
       expect(loaded.qrId, 'qr1');
       expect(loaded.permitStatus, PermitStatus.pending);
+    });
+
+    test('denied permit keeps its reason through a round trip', () async {
+      final col = PermitModel.collectionOf(db);
+      await col.doc('p1').set(buildPermit(
+            adminId: 'admin1',
+            status: PermitStatus.denied,
+            disapprovalReason: 'Missing guardian consent',
+          ));
+
+      final loaded = (await col.doc('p1').get()).data()!;
+      expect(loaded.permitStatus, PermitStatus.denied);
+      expect(loaded.disapprovalReason, 'Missing guardian consent');
+    });
+
+    test('unknown permit_status in Firestore throws', () async {
+      await db.collection('permits').doc('bad').set({
+        'expected_time_in': Timestamp.fromDate(DateTime.utc(2026, 10, 30, 22)),
+        'permit_status': 'BOGUS',
+      });
+
+      await expectLater(
+        () async => (await PermitModel.collectionOf(db).doc('bad').get()).data(),
+        throwsArgumentError,
+      );
+    });
+
+    test('createdAt falls back to now when created_at is missing', () async {
+      await db.collection('permits').doc('p2').set({
+        'expected_time_in': Timestamp.fromDate(DateTime.utc(2026, 10, 30, 22)),
+        // no created_at
+      });
+
+      final loaded = (await PermitModel.collectionOf(db).doc('p2').get()).data()!;
+      expect(
+        loaded.createdAt.difference(DateTime.now()).abs(),
+        lessThan(const Duration(seconds: 5)),
+      );
     });
 
     test('null foreign keys survive a round trip', () async {

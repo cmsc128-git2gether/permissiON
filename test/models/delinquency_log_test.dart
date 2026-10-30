@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:permission_app/models/data_enums.dart';
 
 import 'package:permission_app/models/delinquency_log_model.dart';
 
@@ -67,6 +68,19 @@ void main() {
       final loaded = (await col.doc('d2').get()).data()!;
       expect(loaded.permitId, isNull);
       expect(loaded.reportedBy, isNull);
+    });
+
+    test('server timestamp is applied when createdAt is null', () async {
+      final col = DelinquencyLogModel.collectionOf(db);
+      await col.doc('d3').set(DelinquencyLogModel(
+            id: 'd3',
+            userId: 'u1',
+            violationType: ViolationType.lateCheckIn,
+            violationDescription: '',
+          ));
+
+      final raw = (await db.collection('delinquency_logs').doc('d3').get()).data()!;
+      expect(raw['created_at'], isA<Timestamp>());
     });
 
     test('server timestamp is applied when createdAt is null', () async {
