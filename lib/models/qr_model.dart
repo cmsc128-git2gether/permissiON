@@ -12,7 +12,7 @@ class QrCodeModel {
   final DateTime expiresAt;
   final DateTime? scannedAt;          // null until scanned
   final String? scannedBy;            // FK -> users/{user_id}; null until scanned
-  
+
   QrCodeModel({
     required this.id,
     required this.permitId,
@@ -24,9 +24,14 @@ class QrCodeModel {
     this.scannedBy,
   });
 
-  // A QR is valid only while ACTIVE and not yet expired
-  bool get isValid =>
-      status == QrStatus.active && DateTime.now().isBefore(expiresAt);
+  // A QR is valid at [time] only if it is ACTIVE and [time] is before expiry.
+  // Time is a parameter so edge cases (e.g. 5:59 PM) can be tested without
+  // depending on the real clock.
+  bool isValidAt(DateTime time) =>
+      status == QrStatus.active && time.isBefore(expiresAt);
+
+  // Convenience for callers that just want "valid right now"
+  bool get isValid => isValidAt(DateTime.now());
 
   // Builds a QrCodeModel from the Firestore doc at qr/{id}
   factory QrCodeModel.fromFirestore(
@@ -39,7 +44,7 @@ class QrCodeModel {
       permitId: data['permit_id'] ?? '',
       adminId: data['admin_id'] ?? '',
       status: QrStatus.fromString(data['status'] ?? QrStatus.active.value),
-      createdAt: (data['created_at'] as Timestamp).toDate(),
+      createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
       expiresAt: (data['expires_at'] as Timestamp).toDate(),
       scannedAt: (data['scanned_at'] as Timestamp?)?.toDate(),
       scannedBy: data['scanned_by'],
