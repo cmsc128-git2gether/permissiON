@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 // File imports
 import '../features/authentication/domain/user_model.dart';
+import '../features/authentication/presentation/auth_notifier.dart';
 import '../features/authentication/presentation/admin_dashboard.dart';
 import '../features/authentication/presentation/dormer_dashboard.dart';
 import '../features/authentication/presentation/login_screen.dart';
