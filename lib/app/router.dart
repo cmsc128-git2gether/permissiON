@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 
 // File imports
 import '../features/authentication/domain/user_model.dart';
-import '../features/authentication/presentation/admin_dashboard.dart';
-import '../features/authentication/presentation/dormer_dashboard.dart';
-import '../features/authentication/presentation/login_screen.dart';
+import '../features/presentation/admin_dashboard.dart';
+import '../features/presentation/dormer_dashboard.dart';
+import '../features/presentation/login_screen.dart';
 
 // Sets up the app's pages and decides who can see which page
 GoRouter createRouter(Stream<AppUser?> authStream) {
