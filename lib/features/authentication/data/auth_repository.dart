@@ -67,9 +67,9 @@ class AuthRepository {
             message: 'Authentication failed. Please try again.',
           );
         }
-        // Create the user's profile document, keyed by their Auth UID.
+        // Create the user's profile document, keyed by their Auth ID.
         try {
-            await _firestore.collection('users').doc(user.id).set({
+            await _firestore.collection('users').doc(user.uid).set({
                 'email': normalized,
                 'access_level': 'end_user', // default role
                 'created_at': FieldValue.serverTimestamp(), // Server-side time avoids client clock issues.
@@ -149,9 +149,7 @@ class AuthRepository {
     return FirebaseAuthException(
         code: e.code,
         message: message,
-        email: e.mail,
-        plugin: e.plugin,
-        stackTrace: e.stackTrace,
+        email: e.email,
     );
   }
 }
