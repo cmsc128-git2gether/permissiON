@@ -38,7 +38,8 @@ beforeEach(async () => {
     await setDoc(doc(db, 'users/admin1'), { access_level: 'admin' });
     await setDoc(doc(db, 'users/student1'), { access_level: 'end_user' });
     await setDoc(doc(db, 'users/student2'), { access_level: 'end_user' });
-
+    await setDoc(doc(db, 'users/student3'), { access_level: 'end_user' });
+    
     // profiles
     await setDoc(doc(db, 'admin_profiles/admin1'), { name: 'Admin One' });
     await setDoc(doc(db, 'end_user_profiles/student1'), { name: 'Student One' });
@@ -93,11 +94,69 @@ test('student cannot make themselves admin', async () => {
   );
 });
 
+//=== USERS: CREATE ===
+test('admin can create a user doc', async () => {
+  await assertSucceeds(
+    as('admin1').doc('users/newStudent').set({ access_level: 'end_user' })
+  );
+});
+
+test('admin can create another admin', async () => {
+  await assertSucceeds(
+    as('admin1').doc('users/newAdmin').set({ access_level: 'admin' })
+  );
+});
+
+test('student cannot create a user doc', async () => {
+  await assertFails(
+    as('student1').doc('users/newStudent').set({ access_level: 'end_user' })
+  );
+});
+
+test('student cannot create their own admin doc', async () => {
+  await assertFails(
+    as('student1').doc('users/student3').set({ access_level: 'admin' })
+  );
+});
+
+test('signed-out user cannot create a user doc', async () => {
+  await assertFails(
+    anon().doc('users/newStudent').set({ access_level: 'end_user' })
+  );
+});
+
+test('admin cannot create a user doc with an invalid access_level', async () => {
+  await assertFails(
+    as('admin1').doc('users/newStudent').set({ access_level: 'superuser' })
+  );
+});
+
+//=== USERS: related behavior that must stay locked ===
+test('admin cannot update an existing user doc (no update rule)', async () => {
+  await assertFails(
+    as('admin1').doc('users/student1').update({ access_level: 'admin' })
+  );
+});
+
+test('student cannot delete a user doc', async () => {
+  await assertFails(as('student1').doc('users/student2').delete());
+});
+
+test('admin can delete a user doc', async () => {
+  await assertSucceeds(as('admin1').doc('users/student2').delete());
+});
+
 //=== PROFILES ===
 test('student can read and update own profile', async () => {
-  await assertSucceeds(getDoc(doc(as('student1'), 'end_user_profiles/student1')));
+  await assertSucceeds(as('student1').doc('end_user_profiles/student1').get());
   await assertSucceeds(
-    updateDoc(doc(as('student1'), 'end_user_profiles/student1'), { name: 'New Name' })
+    as('student1').doc('end_user_profiles/student1').update({ phone_num: '555' })
+  );
+});
+
+test('student cannot update fields outside display_photo and phone_num', async () => {
+  await assertFails(
+    as('student1').doc('end_user_profiles/student1').update({ name: 'New Name' })
   );
 });
 
@@ -109,6 +168,22 @@ test('student cannot update another student\'s profile', async () => {
 
 test('admin can read a student profile', async () => {
   await assertSucceeds(getDoc(doc(as('admin1'), 'end_user_profiles/student1')));
+});
+
+test('admin can create an end user profile for an end_user', async () => {
+  await assertSucceeds(as('admin1').doc('end_user_profiles/student3').set({ phone_num: '1' }));
+});
+
+test('admin cannot create an end user profile for an admin user', async () => {
+  await assertFails(as('admin1').doc('end_user_profiles/admin1').set({ phone_num: '1' }));
+});
+
+test('admin cannot create an admin profile for an end_user', async () => {
+  await assertFails(as('admin1').doc('admin_profiles/student3').set({ name: 'x' }));
+});
+
+test('admin cannot create a profile for a nonexistent user', async () => {
+  await assertFails(as('admin1').doc('end_user_profiles/ghost').set({ phone_num: '1' }));
 });
 
 //=== PERMITS ===
