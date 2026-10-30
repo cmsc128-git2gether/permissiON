@@ -12,8 +12,16 @@ class PermitService {
   //detail view of a single permit to be implemented in issue #41, for now returns null
   Stream<PermitModel?> listenToPermit(String permitId) => Stream.value(null);
 
-  //admin history of all pending permits to be implemented in issue #43, for now returns empty list
-    Stream<List<PermitModel>> listenToPendingPermits() => Stream.value(const []);
+  //admin history of all pending permits to be implemented in issue #43
+  Stream<List<PermitModel>> listenToPendingPermits({int? limit}) {
+    var query = _permits
+        .where('permit_status', isEqualTo: PermitStatus.pending.value)
+        .orderBy('created_at'); // oldest or first requests first
+    if (limit != null) query = query.limit(limit);
+
+    return query.snapshots().map((snap) =>
+        snap.docs.map((d) => PermitModel.fromFirestore(d, null)).toList());
+  }
 
   //user cancels a pending permit to be implemented in issue #43
   Future<void> cancelPermit(String userId, String permitId) async {
