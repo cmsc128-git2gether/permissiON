@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:permission_app/features/presentation/permits/permit_detail_screen.dart';
 import 'package:permission_app/services/permit_service.dart';
 
-// Local preview only: no Firebase, no emulator, no login. Do not commit.
 Future<void> main() async {
   final db = FakeFirebaseFirestore();
   final now = DateTime.now();
