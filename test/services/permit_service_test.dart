@@ -250,4 +250,110 @@ group('PermitService: createPermit', () {
       });
     }
   });
+
+  group('PermitService - listenToPendingPermits', () {
+    final base = DateTime(2026, 10, 30, 8, 0);
+
+    Future<void> seed(
+      String id,
+      PermitStatus status, {
+      String userId = 'user_123',
+      DateTime? createdAt,
+    }) async {
+      final permit = createMockPermit(id: id, userId: userId, status: status);
+      await db.collection('permits').doc(id).set({
+        ...permit.toFirestore(),
+        'created_at': Timestamp.fromDate(createdAt ?? base),
+      });
+    }
+
+    test('emits only PENDING permits', () async {
+      await seed('p1', PermitStatus.pending);
+      await seed('p2', PermitStatus.active);
+      await seed('p3', PermitStatus.pending);
+      await seed('p4', PermitStatus.cancelled);
+
+      final list = await permitService.listenToPendingPermits().first;
+
+      expect(list.map((p) => p.id), unorderedEquals(['p1', 'p3']));
+    });
+
+    test('emits an empty list when nothing is pending', () async {
+      await seed('p1', PermitStatus.completed);
+
+      final list = await permitService.listenToPendingPermits().first;
+
+      expect(list, isEmpty);
+    });
+
+    test('includes pending permits from all users', () async {
+      await seed('p1', PermitStatus.pending, userId: 'user_1');
+      await seed('p2', PermitStatus.pending, userId: 'user_2');
+
+      final list = await permitService.listenToPendingPermits().first;
+
+      expect(list.length, 2);
+    });
+
+    test('orders oldest first by created_at', () async {
+      await seed('newest', PermitStatus.pending,
+          createdAt: base.add(const Duration(hours: 2)));
+      await seed('oldest', PermitStatus.pending, createdAt: base);
+      await seed('middle', PermitStatus.pending,
+          createdAt: base.add(const Duration(hours: 1)));
+
+      final list = await permitService.listenToPendingPermits().first;
+
+      expect(list.map((p) => p.id), ['oldest', 'middle', 'newest']);
+    });
+
+    test('limit caps the number of results, keeping the oldest', () async {
+      await seed('a', PermitStatus.pending, createdAt: base);
+      await seed('b', PermitStatus.pending,
+          createdAt: base.add(const Duration(hours: 1)));
+      await seed('c', PermitStatus.pending,
+          createdAt: base.add(const Duration(hours: 2)));
+
+      final list = await permitService.listenToPendingPermits(limit: 2).first;
+
+      expect(list.map((p) => p.id), ['a', 'b']);
+    });
+
+    test('no limit returns everything', () async {
+      for (var i = 0; i < 5; i++) {
+        await seed('p$i', PermitStatus.pending,
+            createdAt: base.add(Duration(minutes: i)));
+      }
+
+      final list = await permitService.listenToPendingPermits().first;
+
+      expect(list.length, 5);
+    });
+
+    test('emits a new list when a permit stops being pending', () async {
+      await seed('p1', PermitStatus.pending);
+
+      final expectation = expectLater(
+        permitService.listenToPendingPermits().map((l) => l.length),
+        emitsInOrder([1, 0]),
+      );
+
+      await db.collection('permits').doc('p1').update({
+        'permit_status': PermitStatus.cancelled.value,
+      });
+
+      await expectation;
+    });
+
+    test('emits a new list when a pending permit is added', () async {
+      final expectation = expectLater(
+        permitService.listenToPendingPermits().map((l) => l.length),
+        emitsInOrder([0, 1]),
+      );
+
+      await seed('p1', PermitStatus.pending);
+
+      await expectation;
+    });
+  });
 }
