@@ -9,15 +9,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Broadcast so both the router and the refresh listener can listen
-  final authStream = AuthRepository().authStateStream.asBroadcastStream();
+  // One notifier, it listens to the auth stream and feeds the router
+  final auth = AuthNotifier(AuthRepository());
+  final router = createRouter(auth);
 
-  runApp(MyApp(router: createRouter(authStream)));
+  runApp(MyApp(router: router));
 }
 
 class MyApp extends StatelessWidget {
-  final GoRouter router;
+
   const MyApp({super.key, required this.router});
+  final GoRouter router;
 
   // This widget is the root of your application.
   @override
