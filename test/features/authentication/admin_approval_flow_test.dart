@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:permission_app/models/data_enums.dart';
 
 import 'package:permission_app/features/authentication/data/admin_approval_flow.dart';
-import 'package:permission_app/features/authentication/domain/permit_model.dart';
+import 'package:permission_app/models/permit_model.dart';
 import 'package:permission_app/features/authentication/domain/user_model.dart';
+
 
 void main() {
   late FakeFirebaseFirestore db;
