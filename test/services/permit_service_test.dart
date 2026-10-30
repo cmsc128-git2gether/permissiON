@@ -190,17 +190,37 @@ group('PermitService: createPermit', () {
       expect(parseTimestamp(data['actual_time_in']), timeIn);
     });
 
-    test('throws ArgumentError when `at` is in the future', () async {
+    test('ACTIVE permit with no `at` must be COMPLETED', () async {
+      final samplePermit =
+          createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
+      await db.collection('permits').doc('p1').set(samplePermit.toFirestore());
+
+      // run the service with the clock frozen at `now`
+      await withClock(Clock.fixed(now), () async {
+        await permitService.recordTimeIn('p1');
+      });
+
+      final data = (await db.collection('permits').doc('p1').get()).data()!;
+
+      expect(data['permit_status'], 'COMPLETED');
+      expect(parseTimestamp(data['actual_time_in']), now);
+    });
+
+    test('throws StateError when `at` is in the future, writes nothing on the field', () async {
       final samplePermit =
           createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
       await db.collection('permits').doc('p1').set(samplePermit.toFirestore());
 
       await withClock(Clock.fixed(now), () async {
-        expect(
+        await expectLater(
           () => permitService.recordTimeIn('p1', at: now.add(const Duration(hours: 1))),
-          throwsArgumentError,
+          throwsStateError,
         );
       });
+
+      final data = (await db.collection('permits').doc('p1').get()).data()!;
+      expect(data['permit_status'], 'ACTIVE');       // unchanged
+      expect(data['actual_time_in'], isNull);
     });
 
     test('throws StateError for a missing permit', () async {
