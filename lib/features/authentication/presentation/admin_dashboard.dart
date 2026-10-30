@@ -17,7 +17,7 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(child: Text('Student Home')),
+      body: const Center(child: Text('Admin Home')),
     );
   }
 }
