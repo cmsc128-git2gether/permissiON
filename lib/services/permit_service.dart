@@ -15,9 +15,33 @@ class PermitService {
   //admin history of all pending permits to be implemented in issue #43, for now returns empty list
     Stream<List<PermitModel>> listenToPendingPermits() => Stream.value(const []);
 
-  //user cancels a pending permit to be implemented in issue #43, for now throws unimplemented error
+  //user cancels a pending permit to be implemented in issue #43
   Future<void> cancelPermit(String userId, String permitId) async {
-    throw UnimplementedError('cancelPermit');
+    final ref = _permits.doc(permitId);
+
+    //----------------- transaction from snapshot --------------------
+    return _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+
+    //failure/guard messages
+      if (!snapshot.exists) {
+        throw StateError('Permit $permitId does not exist');
+      }
+
+      if (snapshot.data()!['user_id'] != userId) {
+        throw StateError('Permit $permitId does not belong to user $userId');
+      }
+
+      if (snapshot.data()!['permit_status'] != PermitStatus.pending.value 
+        && snapshot.data()!['permit_status'] != PermitStatus.active.value) {
+        throw StateError('Only PENDING or ACTIVE permits can be cancelled.');
+      }
+
+      //write
+      transaction.update(ref, {
+        'permit_status': PermitStatus.cancelled.value,
+      });
+    });
   }
 
   //admin manual override of a permit's status, for now throws unimplemented error
