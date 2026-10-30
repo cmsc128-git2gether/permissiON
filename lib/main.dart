@@ -7,12 +7,16 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Create instance of AuthRepository
+  final authRepository = AuthRepository();
 
   // Broadcast so both the router and the refresh listener can listen
   final authStream = AuthRepository().authStateStream.asBroadcastStream();
 
-  runApp(MyApp(router: createRouter(authStream)));
+  runApp(MyApp(router: createRouter(authStream, authRepository)));
 }
 
 class MyApp extends StatelessWidget {
