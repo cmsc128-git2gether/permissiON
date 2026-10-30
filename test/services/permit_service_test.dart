@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_app/models/data_enums.dart'; 
 import 'package:permission_app/models/permit_model.dart';
 import 'package:permission_app/services/permit_service.dart'; 
+import 'package:permission_app/utils/firestore_utils.dart';
+import 'package:clock/clock.dart';
 
 void main(){
   late FakeFirebaseFirestore db;
@@ -165,6 +167,78 @@ group('PermitService: createPermit', () {
       expect(data['approved_by'], 'admin_1');
       expect(data['approved_at'], isNotNull);
       expect(data['disapproval_reason'], 'Invalid curfew time.');
+    });
+  });
+
+  group('PermitService - recordTimeIn', () {
+    final now = DateTime(2026, 10, 30, 16, 0);
+    final timeIn = DateTime(2026, 10, 30, 15, 0);
+
+    test('ACTIVE permit gets actual_time_in and becomes COMPLETED', () async {
+      final samplePermit =
+          createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
+      await db.collection('permits').doc('p1').set(samplePermit.toFirestore());
+
+      // run the service with the clock frozen at `now`
+      await withClock(Clock.fixed(now), () async {
+        await permitService.recordTimeIn('p1', at: timeIn);
+      });
+
+      final data = (await db.collection('permits').doc('p1').get()).data()!;
+
+      expect(data['permit_status'], 'COMPLETED');
+      expect(parseTimestamp(data['actual_time_in']), timeIn);
+    });
+
+    test('throws ArgumentError when `at` is in the future', () async {
+      final samplePermit =
+          createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
+      await db.collection('permits').doc('p1').set(samplePermit.toFirestore());
+
+      await withClock(Clock.fixed(now), () async {
+        expect(
+          () => permitService.recordTimeIn('p1', at: now.add(const Duration(hours: 1))),
+          throwsArgumentError,
+        );
+      });
+    });
+
+    test('throws StateError for a missing permit', () async {
+      await withClock(Clock.fixed(now), () async {
+        await expectLater(
+          permitService.recordTimeIn('does_not_exist'),
+          throwsStateError,
+        );
+      });
+    });
+
+    test('throws StateError for a non-ACTIVE permit', () async {
+      final pending =
+          createMockPermit(id: 'p2', userId: 'user_123', status: PermitStatus.pending);
+      await db.collection('permits').doc('p2').set(pending.toFirestore());
+
+      await withClock(Clock.fixed(now), () async {
+        await expectLater(
+          permitService.recordTimeIn('p2'),
+          throwsStateError,
+        );
+      });
+    });
+
+    test('throws StateError if a time-in already exists', () async {
+      final permit =
+          createMockPermit(id: 'p3', userId: 'user_123', status: PermitStatus.active);
+      await db.collection('permits').doc('p3').set({
+        ...permit.toFirestore(),
+        'actual_time_in': Timestamp.fromDate(timeIn),
+      });
+
+      await withClock(Clock.fixed(now), () async {
+        await expectLater(
+          permitService.recordTimeIn('p3'),
+          throwsStateError,
+        );
+      });
     });
   });
 }
