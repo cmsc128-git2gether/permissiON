@@ -16,7 +16,7 @@ class PermitService {
   Stream<PermitModel?> listenToPermit(String permitId) => Stream.value(null);
 
   //admin history of all pending permits to be implemented in issue #43, for now returns empty list
-    Stream<List<PermitModel>> listenToPendingPermits() => Stream.value(const []);
+  Stream<List<PermitModel>> listenToPendingPermits() => Stream.value(const []);
 
   //user cancels a pending permit to be implemented in issue #43, for now throws unimplemented error
   Future<void> cancelPermit(String userId, String permitId) async {
@@ -26,14 +26,12 @@ class PermitService {
   //admin manual override of a permit's status, for now throws unimplemented error
   // issue #44
   Future<void> recordTimeIn(
-    // String adminId,
-    // adminId only exists in QR codes
     String permitId, {
     DateTime? at,
   }) async {
     // validates time is not future
     if (at != null && at.isAfter(clock.now())) {
-      throw ArgumentError('Time-in cannot be in the future.');
+      throw StateError('Time-in cannot be in the future.');
     }
 
     final ref = _permits.doc(permitId);
@@ -60,7 +58,8 @@ class PermitService {
 
       //write
       transaction.update(ref, {
-        'actual_time_in': at != null ? toTimestamp(at) : FieldValue.serverTimestamp(),
+        //'actual_time_in': at != null ? toTimestamp(at) : FieldValue.serverTimestamp(),
+        'actual_time_in': toTimestamp(at ?? clock.now()), // injected clock.now() instead of server timestamp
         'permit_status':PermitStatus.completed.value,
       });
     });
