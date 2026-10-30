@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../domain/permit_model.dart';
+import 'package:permission_app/models/data_enums.dart';
+import '../../../models/permit_model.dart';
 import '../domain/user_model.dart';
 
 // Thrown when an admin action can't be applied to a permit
@@ -48,7 +49,7 @@ class PermitAdminService {
   Future<void> _decide({
     required String permitId,
     required AppUser admin,
-    required PermitStatus newStatus,   // was: required String newStatus
+    required PermitStatus newStatus, 
   }) async {
     if (!admin.isAdmin) {
       throw PermitActionException('Only admins can approve or deny permits.');
