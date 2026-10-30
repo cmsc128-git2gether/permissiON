@@ -9,8 +9,14 @@ class PermitService {
   //admin history of all permits to be implemented in issue #42, for now returns empty list
   Stream<List<PermitModel>> listenToAllPermits() => Stream.value(const []);
 
-  //detail view of a single permit to be implemented in issue #41, for now returns null
-  Stream<PermitModel?> listenToPermit(String permitId) => Stream.value(null);
+  //detail view of a single permit using permit_detail_screen.dart, returns null if the permit does not exist
+  Stream<PermitModel?> listenToPermit(String permitId){
+    return _permits.doc(permitId).snapshots().map((snap) {
+      if (!snap.exists) return null;
+      return PermitModel.fromFirestore(snap, null);
+    });
+  }
+
 
   //admin history of all pending permits to be implemented in issue #43, for now returns empty list
     Stream<List<PermitModel>> listenToPendingPermits() => Stream.value(const []);
