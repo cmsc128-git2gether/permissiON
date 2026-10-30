@@ -12,6 +12,17 @@ class AuthRepository {
     : _auth = auth ?? FirebaseAuth.instance,
       _firestore = firestore ?? FirebaseFirestore.instance;
 
+
+  //--- sign in and sign up to be implemented in issue #36, for now throws unimplemented error ---
+  Future<void> signIn({required String email, required String password}) async {
+    throw UnimplementedError('signIn');
+  }
+
+  Future<void> signUp({required String email, required String password}) async {
+    throw UnimplementedError('signUp');
+  }
+  // ----------------------------------------------------------------------------------------------
+
   // Gives an AppUser (with role) when someone logs in, or null when they log out
   Stream<AppUser?> get authStateStream {
     // Runs every time the login state changes

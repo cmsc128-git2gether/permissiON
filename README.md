@@ -4,15 +4,30 @@ Web app for filing and managing dorm permits at Balay Gumamela. Residents file p
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Documentation](#documentation)
-- [Sprint Progress](#sprint-progress)
-- [Team](#team)
-- [Contributing](#contributing)
+- [Dorm Permit System](#dorm-permit-system)
+	- [Table of Contents](#table-of-contents)
+	- [Overview](#overview)
+	- [Features](#features)
+	- [Tech Stack](#tech-stack)
+	- [Data Model](#data-model)
+		- [Schema](#schema)
+		- [Flow](#flow)
+	- [Project Structure](#project-structure)
+	- [Getting Started](#getting-started)
+		- [Prerequisites](#prerequisites)
+		- [Setup](#setup)
+		- [Environment Variables](#environment-variables)
+		- [Test Accounts](#test-accounts)
+	- [Documentation](#documentation)
+	- [Sprint Progress](#sprint-progress)
+	- [Team](#team)
+	- [Contributing](#contributing)
+		- [Workflow](#workflow)
+		- [Definition of Done (draft)](#definition-of-done-draft)
+		- [Contract Stubs](#contract-stubs)
+		- [Commit Messages](#commit-messages)
+	- [Data Privacy](#data-privacy)
+	- [License](#license)
 
 ## Overview
 
@@ -165,8 +180,8 @@ cp .env.example .env   # fill in values
 
 | Sprint | Focus                              | Status      | Notes                                                                                                                           |
 | ------ | ---------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| 1      | Wireframes, data model, user flows | In progress | [User Stories](https://docs.google.com/spreadsheets/d/1ttPp9L5IGLKUVZ3a-sBnqR2AKmY9hZ4rxIdNRENLatc/edit?usp=sharingsprint-1.md) |
-| 2      | _TBD_                              | Planned     |                                                                                                                                 |
+| 1      | Wireframes, data model, user flows | DONE | [User Stories](https://docs.google.com/spreadsheets/d/1ttPp9L5IGLKUVZ3a-sBnqR2AKmY9hZ4rxIdNRENLatc/edit?usp=sharingsprint-1.md) |
+| 2      | Working end-to-end permit loop without QR or filters                              | In Progress     |                                                                                                                                 |
 | 3      | _TBD_                              | Planned     |                                                                                                                                 |
 
 ## Team
@@ -195,6 +210,21 @@ cp .env.example .env   # fill in values
 - [ ] Local checks pass: `flutter analyze` and `flutter test`
 - [ ] CI workflow (`.github/workflows/ci.yml`) is green
 - [ ] PR template and README.md updated
+
+### Contract Stubs
+| Surface | Signature | Returns / throws |
+|---|---|---|
+| `AuthRepository.authStateStream` | existing | `Stream<AppUser?>`, null = signed out |
+| `AuthRepository.signIn` | `({email, password})` | `Future<void>`, throws `UnimplementedError`  (should throw `AuthFailure` by implementation)|
+| `AuthRepository.signUp` | `({email, password})` | `Future<void>`, throws `UnimplementedError`  (should throw `AuthFailure` by implementation)|
+| `AuthRepository.signOut` | existing | `Future<void>` |
+| `PermitService.listenToAllPermits` | `()` | `Stream<List<PermitModel>>`, newest first |
+| `PermitService.listenToPermit` | `(permitId)` | `Stream<PermitModel?>`, null if missing |
+| `PermitService.listenToPendingPermits` | `()` | `Stream<List<PermitModel>>` |
+| `PermitService.cancelPermit` | `(userId, permitId)` | `Future<void>`, `StateError` on invalid |
+| `PermitService.recordTimeIn` | `(adminId, permitId, {at})` | `Future<void>`, `StateError` on invalid |
+
+- Each stub's doc comment names the issue that will implement it. The implementer removes the "stub" wording when the real code is implemented.
 
 ### Commit Messages
 
