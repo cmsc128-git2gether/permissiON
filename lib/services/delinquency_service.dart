@@ -3,9 +3,7 @@ import '../models/data_enums.dart';
 import '../models/delinquency_log_model.dart';
 
 class DelinquencyService {
-  DelinquencyService({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
-  final FirebaseFirestore _db;
+  DelinquencyService({FirebaseFirestore? firestore});
 
   ///for admin: every log, newest first.
   Stream<List<DelinquencyLogModel>> listenToDelinquencies() =>

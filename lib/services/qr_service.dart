@@ -1,10 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/qr_model.dart';
 // lib/services/qr_service.dart
 class QrService {
-  QrService({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
-  final FirebaseFirestore _db;
+  // QrService({FirebaseFirestore? firestore})
+  //     : _db = firestore ?? FirebaseFirestore.instance;
+  // final FirebaseFirestore _db;
 
   /// Live QR for a permit; null if none exists.
   Stream<QrCodeModel?> listenToQrForPermit(String permitId) =>
@@ -19,9 +19,9 @@ class QrService {
 
 // lib/services/archive_service.dart
 class ArchiveService {
-  ArchiveService({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
-  final FirebaseFirestore _db;
+  // ArchiveService({FirebaseFirestore? firestore})
+  //     : _db = firestore ?? FirebaseFirestore.instance;
+  // final FirebaseFirestore _db;
 
   /// CSV text of permits with expected_time_in in [from]..[to].
   Future<String> exportPermitsCsv(DateTime from, DateTime to) async =>
@@ -36,9 +36,9 @@ class ArchiveService {
 
 // lib/services/notification_service.dart
 class NotificationService {
-  NotificationService({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
-  final FirebaseFirestore _db;
+  // NotificationService({FirebaseFirestore? firestore})
+  //     : _db = firestore ?? FirebaseFirestore.instance;
+  // final FirebaseFirestore _db;
 
   ///in-app inbox, newest first. Docs are written inside the
   /// updatePermitStatus transaction (issue #22).

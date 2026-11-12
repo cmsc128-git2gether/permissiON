@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:permission_app/features/presentation/widgets/status_chip.dart';
 import 'package:permission_app/models/data_enums.dart';
 
-//queue item for the permit queue list
-//placeholder for permit model
-class QueueItem {
-  const QueueItem({
+
+
+class PermitModel {
+  const PermitModel({
     required this.id,
     required this.fullName,
     required this.roomNum,
@@ -21,7 +21,7 @@ class QueueItem {
 
 class PermitQueueTile extends StatelessWidget {
   const PermitQueueTile({super.key, required this.item, required this.onTap});
-  final QueueItem item;
+  final PermitModel item;
   final VoidCallback onTap; // parent calls context.push('/permits/${item.id}')
 
   @override

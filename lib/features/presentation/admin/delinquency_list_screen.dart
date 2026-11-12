@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class DelinquencyItem {
-  const DelinquencyItem({
+class PermitModelDelinquencyLogModel {
+  const PermitModelDelinquencyLogModel({
     required this.id,
     required this.userId,
     required this.studentName,
@@ -20,10 +20,10 @@ class DelinquencyListScreen extends StatelessWidget {
     required this.logs,
     required this.onResolve,
   });
-  final Stream<List<DelinquencyItem>> logs;
+  final Stream<List<PermitModelDelinquencyLogModel>> logs;
   final void Function(String logId, String? note) onResolve;
 
-  Future<void> _resolve(BuildContext context, DelinquencyItem item) async {
+  Future<void> _resolve(BuildContext context, PermitModelDelinquencyLogModel item) async {
     final note = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
@@ -53,7 +53,7 @@ class DelinquencyListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Delinquencies')),
-        body: StreamBuilder<List<DelinquencyItem>>(
+        body: StreamBuilder<List<PermitModelDelinquencyLogModel>>(
           stream: logs,
           builder: (context, snap) {
             if (snap.hasError) {
