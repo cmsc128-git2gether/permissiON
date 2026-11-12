@@ -1,13 +1,13 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:permission_app/models/data_enums.dart'; 
+import 'package:permission_app/models/data_enums.dart';
 import 'package:permission_app/models/permit_model.dart';
-import 'package:permission_app/services/permit_service.dart'; 
+import 'package:permission_app/services/permit_service.dart';
 import 'package:permission_app/utils/firestore_utils.dart';
 import 'package:clock/clock.dart';
 
-void main(){
+void main() {
   late FakeFirebaseFirestore db;
   late PermitService permitService;
 
@@ -27,7 +27,7 @@ void main(){
       purpose: 'study',
       emergencyContactPerson: 'Test Contact',
       emergencyContactNum: '0000000000',
-      expectedTimeIn: DateTime.now().add(const Duration(hours:3)),
+      expectedTimeIn: DateTime.now().add(const Duration(hours: 3)),
       permitStatus: status,
       createdAt: DateTime.now(),
     );
@@ -38,7 +38,14 @@ void main(){
     permitService = PermitService(firestore: db);
   });
 
-group('PermitService: createPermit', () {
+  group('PermitService: isAfterFilingCutoff', () {
+    test('false before 6 PM, true at and after', () {
+      expect(PermitService.isAfterFilingCutoff(DateTime(2026, 11, 10, 17, 59)), isFalse);
+      expect(PermitService.isAfterFilingCutoff(DateTime(2026, 11, 10, 18)), isTrue);
+    });
+  });
+
+  group('PermitService: createPermit', () {
     test('creates a permit document with initialized and defaulted fields for a user', () async {
       final inputPermit = createMockPermit(id: '', userId: 'user_123', status: PermitStatus.active);
 
@@ -55,9 +62,42 @@ group('PermitService: createPermit', () {
       expect(data['disapproval_reason'], isNull);
       expect(data['permit_type'], PermitType.late.value);
       expect(data['approved_by'], isNull);
-      expect(data['approved_at'], isNull); //
+      expect(data['approved_at'], isNull);
       expect(data['created_at'], isNotNull);
       expect(data['qr_id'], isNull);
+    });
+  });
+
+  group('PermitService: listenToPermit', () {
+    test('emits null for a missing doc, the mapped permit, and again on a status change', () async {
+      const permitId = 'p_stream_1';
+      final stream = permitService.listenToPermit(permitId);
+
+      final futureExpectations = expectLater(
+        stream,
+        emitsInOrder([
+          isNull,
+          isA<PermitModel>()
+              .having((p) => p.id, 'id', permitId)
+              .having((p) => p.permitStatus, 'status', PermitStatus.pending),
+          isA<PermitModel>()
+              .having((p) => p.id, 'id', permitId)
+              .having((p) => p.permitStatus, 'status', PermitStatus.active),
+        ]),
+      );
+
+      await Future.delayed(Duration.zero);
+
+      final mockPermit = createMockPermit(id: permitId, userId: 'user_123', status: PermitStatus.pending);
+      await db.collection('permits').doc(permitId).set(mockPermit.toFirestore());
+
+      await Future.delayed(Duration.zero);
+
+      await db.collection('permits').doc(permitId).update({
+        'permit_status': PermitStatus.active.value,
+      });
+
+      await futureExpectations;
     });
   });
 
@@ -65,22 +105,29 @@ group('PermitService: createPermit', () {
     test('streams lists matching the target userId sorted descending by created_at', () async {
       const targetUser = 'user_abc';
       final baseTime = DateTime(2026, 10, 25, 12, 0);
-      
+
       final olderPermit = createMockPermit(id: 'p1', userId: targetUser);
       final newerPermit = createMockPermit(id: 'p2', userId: targetUser);
       final separateUserPermit = createMockPermit(id: 'p3', userId: 'user_xyz');
 
-      await db.collection('permits').doc('p1').set(olderPermit.toFirestore()..['created_at'] = Timestamp.fromDate(baseTime));
-      await db.collection('permits').doc('p2').set(newerPermit.toFirestore()..['created_at'] = Timestamp.fromDate(baseTime.add(const Duration(hours: 1))));
-      await db.collection('permits').doc('p3').set(separateUserPermit.toFirestore()..['created_at'] = Timestamp.fromDate(baseTime));
+      await db
+          .collection('permits')
+          .doc('p1')
+          .set(olderPermit.toFirestore()..['created_at'] = Timestamp.fromDate(baseTime));
+      await db.collection('permits').doc('p2').set(
+          newerPermit.toFirestore()..['created_at'] = Timestamp.fromDate(baseTime.add(const Duration(hours: 1))));
+      await db
+          .collection('permits')
+          .doc('p3')
+          .set(separateUserPermit.toFirestore()..['created_at'] = Timestamp.fromDate(baseTime));
 
       final stream = permitService.listenToUserPermits(targetUser);
 
       await expectLater(
         stream,
         emits([
-          isA<PermitModel>().having((p) => p.id, 'id', 'p2'), 
-          isA<PermitModel>().having((p) => p.id, 'id', 'p1'), 
+          isA<PermitModel>().having((p) => p.id, 'id', 'p2'),
+          isA<PermitModel>().having((p) => p.id, 'id', 'p1'),
         ]),
       );
     });
@@ -89,7 +136,8 @@ group('PermitService: createPermit', () {
   group('PermitService: updatePermitStatus (fail-fast checks)', () {
     test('throws ArgumentError if disapproval reason is provided when status is not denied', () {
       expect(
-        () => permitService.updatePermitStatus('admin_1', 'p1', PermitStatus.active.value, disapprovalReason: 'Looks good'),
+        () => permitService.updatePermitStatus('admin_1', 'p1', PermitStatus.active.value,
+            disapprovalReason: 'Looks good'),
         throwsArgumentError,
       );
     });
@@ -113,13 +161,17 @@ group('PermitService: createPermit', () {
         () => permitService.updatePermitStatus('admin_1', 'p1', PermitStatus.pending.value),
         throwsArgumentError,
       );
+      expect(
+        () => permitService.updatePermitStatus('admin_1', 'p1', PermitStatus.cancelled.value),
+        throwsArgumentError,
+      );
     });
   });
 
-  group('PermitService - updatePermitStatus (Database Transaction Rules)', () {
+  group('PermitService: updatePermitStatus (Database Transaction Rules)', () {
     test('throws StateError when attempting to update a non-existent permit ID token', () async {
-      expect(
-        () => permitService.updatePermitStatus('admin_1', 'missing_id', PermitStatus.active.value),
+      await expectLater(
+        permitService.updatePermitStatus('admin_1', 'missing_id', PermitStatus.active.value),
         throwsStateError,
       );
     });
@@ -128,10 +180,13 @@ group('PermitService: createPermit', () {
       final activePermit = createMockPermit(id: 'p_active', userId: 'u1', status: PermitStatus.active);
       await db.collection('permits').doc('p_active').set(activePermit.toFirestore());
 
-      expect(
-        () => permitService.updatePermitStatus('admin_1', 'p_active', PermitStatus.active.value),
+      await expectLater(
+        permitService.updatePermitStatus('admin_1', 'p_active', PermitStatus.active.value),
         throwsStateError,
       );
+
+      final snapshot = await db.collection('permits').doc('p_active').get();
+      expect(snapshot.data()!['approved_by'], isNull);
     });
 
     test('successfully marks pending permit to active within active transaction constraints', () async {
@@ -156,7 +211,7 @@ group('PermitService: createPermit', () {
       await permitService.updatePermitStatus(
         'admin_1',
         'p_bad',
-        PermitStatus.denied.value, 
+        PermitStatus.denied.value,
         disapprovalReason: 'Invalid curfew time.',
       );
 
@@ -170,95 +225,105 @@ group('PermitService: createPermit', () {
     });
   });
 
-  group('PermitService - recordTimeIn', () {
+  group('PermitService: recordTimeIn', () {
     final now = DateTime(2026, 10, 30, 16, 0);
     final timeIn = DateTime(2026, 10, 30, 15, 0);
 
     test('ACTIVE permit gets actual_time_in and becomes COMPLETED', () async {
-      final samplePermit =
-          createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
+      final samplePermit = createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
       await db.collection('permits').doc('p1').set(samplePermit.toFirestore());
 
-      // run the service with the clock frozen at `now`
       await withClock(Clock.fixed(now), () async {
-        await permitService.recordTimeIn('p1', at: timeIn);
+        await permitService.recordTimeIn('admin_1', 'p1', at: timeIn);
       });
 
       final data = (await db.collection('permits').doc('p1').get()).data()!;
 
-      expect(data['permit_status'], 'COMPLETED');
+      expect(data['permit_status'], PermitStatus.completed.value);
       expect(parseTimestamp(data['actual_time_in']), timeIn);
+      expect(data['time_in_recorded_by'], 'admin_1');
     });
 
     test('ACTIVE permit with no `at` must be COMPLETED', () async {
-      final samplePermit =
-          createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
+      final samplePermit = createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
       await db.collection('permits').doc('p1').set(samplePermit.toFirestore());
 
-      // run the service with the clock frozen at `now`
       await withClock(Clock.fixed(now), () async {
-        await permitService.recordTimeIn('p1');
+        await permitService.recordTimeIn('admin_1', 'p1');
       });
 
       final data = (await db.collection('permits').doc('p1').get()).data()!;
 
-      expect(data['permit_status'], 'COMPLETED');
+      expect(data['permit_status'], PermitStatus.completed.value);
       expect(parseTimestamp(data['actual_time_in']), now);
+      expect(data['time_in_recorded_by'], 'admin_1');
     });
 
-    test('throws StateError when `at` is in the future, writes nothing on the field', () async {
-      final samplePermit =
-          createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
+    test('at == now is allowed', () async {
+      final p = createMockPermit(id: 'p1', userId: 'u1', status: PermitStatus.active);
+      await db.collection('permits').doc('p1').set(p.toFirestore());
+
+      await withClock(Clock.fixed(now), () async {
+        await permitService.recordTimeIn('admin_1', 'p1', at: now);
+      });
+
+      final data = (await db.collection('permits').doc('p1').get()).data()!;
+      expect(data['permit_status'], PermitStatus.completed.value);
+    });
+
+    test('throws ArgumentError if at is in the future', () async {
+      final samplePermit = createMockPermit(id: 'p1', userId: 'user_123', status: PermitStatus.active);
       await db.collection('permits').doc('p1').set(samplePermit.toFirestore());
 
       await withClock(Clock.fixed(now), () async {
         await expectLater(
-          () => permitService.recordTimeIn('p1', at: now.add(const Duration(hours: 1))),
-          throwsStateError,
+          permitService.recordTimeIn('admin_1', 'p1', at: now.add(const Duration(hours: 1))),
+          throwsArgumentError,
         );
       });
 
       final data = (await db.collection('permits').doc('p1').get()).data()!;
-      expect(data['permit_status'], 'ACTIVE');       // unchanged
+      expect(data['permit_status'], PermitStatus.active.value);
       expect(data['actual_time_in'], isNull);
     });
 
-    test('throws StateError for a missing permit', () async {
-      await withClock(Clock.fixed(now), () async {
-        await expectLater(
-          permitService.recordTimeIn('does_not_exist'),
-          throwsStateError,
-        );
-      });
+    test('throws StateError when permit does not exist', () async {
+      await expectLater(
+        permitService.recordTimeIn('admin_1', 'does_not_exist'),
+        throwsStateError,
+      );
     });
 
-    test('throws StateError for a non-ACTIVE permit', () async {
-      final pending =
-          createMockPermit(id: 'p2', userId: 'user_123', status: PermitStatus.pending);
-      await db.collection('permits').doc('p2').set(pending.toFirestore());
+    test('throws StateError and writes nothing when permit is not ACTIVE', () async {
+      final pendingPermit = createMockPermit(id: 'p2', userId: 'user_123', status: PermitStatus.pending);
+      await db.collection('permits').doc('p2').set(pendingPermit.toFirestore());
 
-      await withClock(Clock.fixed(now), () async {
-        await expectLater(
-          permitService.recordTimeIn('p2'),
-          throwsStateError,
-        );
-      });
+      await expectLater(
+        permitService.recordTimeIn('admin_1', 'p2'),
+        throwsStateError,
+      );
+
+      final data = (await db.collection('permits').doc('p2').get()).data()!;
+      expect(data['permit_status'], PermitStatus.pending.value);
+      expect(data['actual_time_in'], isNull);
     });
 
-    test('throws StateError if a time-in already exists', () async {
-      final permit =
-          createMockPermit(id: 'p3', userId: 'user_123', status: PermitStatus.active);
-      await db.collection('permits').doc('p3').set({
-        ...permit.toFirestore(),
-        'actual_time_in': Timestamp.fromDate(timeIn),
-      });
+    test('throws StateError and preserves existing timeIn when permit is already timed in', () async {
+      final activePermit = createMockPermit(id: 'p_timed', userId: 'user_123', status: PermitStatus.active);
+      await db.collection('permits').doc('p_timed').set(
+            activePermit.toFirestore()..['actual_time_in'] = Timestamp.fromDate(timeIn),
+          );
 
       await withClock(Clock.fixed(now), () async {
         await expectLater(
-          permitService.recordTimeIn('p3'),
+          permitService.recordTimeIn('admin_1', 'p_timed'),
           throwsStateError,
         );
       });
+
+      final data = (await db.collection('permits').doc('p_timed').get()).data()!;
+      expect(data['permit_status'], PermitStatus.active.value);
+      expect(parseTimestamp(data['actual_time_in']), timeIn);
     });
   });
 }
