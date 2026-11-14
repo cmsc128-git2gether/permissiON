@@ -1,5 +1,4 @@
 // Package imports
-//import 'package:flutter/material.dart'; updated to material_ui, due to change in Flutter
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
