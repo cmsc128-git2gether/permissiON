@@ -356,6 +356,8 @@ group('PermitService: createPermit', () {
       await seed('p1', PermitStatus.pending);
 
       await expectation;
+    });
+  });
   group('PermitService - recordTimeIn', () {
     final now = DateTime(2026, 10, 30, 16, 0);
     final timeIn = DateTime(2026, 10, 30, 15, 0);
