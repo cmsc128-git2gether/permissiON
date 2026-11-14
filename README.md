@@ -78,7 +78,7 @@ users/{user_id}
 	updated_at: TIMESTAMP | NULL, deleted_at: TIMESTAMP | NULL
 
 admin_profiles/{user_id}
-	full_name, display_photo, position, on_duty: BOOL
+	name, display_photo
 
 end_user_profiles/{user_id}
 	full_name, display_photo, phone_num, room_num
