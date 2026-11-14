@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  material_ui: ^1.11.0
+  # material_ui: ^1.11.0
     
   # Dependency for injected clock
   clock: ^1.1.1
