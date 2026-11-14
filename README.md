@@ -223,8 +223,24 @@ cp .env.example .env   # fill in values
 | `PermitService.listenToPendingPermits` | `()` | `Stream<List<PermitModel>>` |
 | `PermitService.cancelPermit` | `(userId, permitId)` | `Future<void>`, `StateError` on invalid |
 | `PermitService.recordTimeIn` | `(permitId, {at})` | `Future<void>`, `StateError` on invalid |
+| `PermitModel` | `floor`, `isLateFiling`, `lateFilingReason`, `isLate`, `isOverdueAt(now)`, `isStalePendingAt(now)` | Real code with tests |
+| `PermitService.isAfterFilingCutoff` | `static (now)` | Pure |
+| `PermitService.createPermit` | `(permit, {lateReason})` | `lateReason` accepted, applied in #5 |
+| `PermitService.recordTimeIn` | `(adminId, permitId, {at})` | Restored `adminId`, writes `time_in_recorded_by` |
+| `PermitService.listenToAllPermits` | `({filter})` | Stub |
+| `PermitService.listenToPendingPermits` | `()` | Stub |
+| `PermitService.cancelPermit` | `(userId, permitId)` | Stub |
+| `PermitService.extendPermit` | `(userId, permitId, newExpectedTimeIn)` | Stub |
+| `PermitService.changePermitType` | `(userId, permitId, type)` | Stub |
+| `PermitService.expireStalePending` | `()` | Stub |
+| `DelinquencyService` | `listenToDelinquencies`, `listenToUserDelinquencies`, `flagPermit`, `resolve` | Stubs |
+| `QrService` | `listenToQrForPermit`, `scan` | Stubs |
+| `ArchiveService` | `exportPermitsCsv`, `deletePermits` | Stubs |
+| `NotificationService` | `listenToNotifications`, `markRead` | Stubs |
+
 
 - Each stub's doc comment names the issue that will implement it. The implementer removes the "stub" wording when the real code is implemented.
+- Signatures assumed by the shells: `isAfterCutoff(DateTime)`, `onSubmit(String? lateReason)`, `onResolve(logId, note)`.
 
 ### Commit Messages
 

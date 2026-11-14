@@ -113,4 +113,21 @@ enum ViolationType {
         (e) => e.value == db, 
         orElse: () => throw ArgumentError('Invalid Violation Type: "$db"'),
     );
+
+}
+
+
+// delinquency reason
+enum DelinquencyReason {
+  lateReturn('LATE_RETURN'),
+  overdue('OVERDUE'),
+  lateFiling('LATE_FILING');
+
+  const DelinquencyReason(this.value);
+  final String value; // to firestore
+
+  static DelinquencyReason fromString(String db) => values.firstWhere(
+        (e) => e.value == db,
+        orElse: () => throw ArgumentError('Invalid Delinquency Reason: "$db"'),
+      );
 }
