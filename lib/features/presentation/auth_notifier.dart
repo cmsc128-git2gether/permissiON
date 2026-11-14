@@ -7,8 +7,8 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../data/auth_repository.dart';
-import '../domain/user_model.dart';
+import '../authentication/data/auth_repository.dart';
+import '../authentication/domain/user_model.dart';
 // The possible authentication states the app can be in:
 // - unknown:    haven't received the first auth event yet (e.g. splash screen)
 // - signedOut:  no user is logged in
