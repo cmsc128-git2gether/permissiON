@@ -1,42 +1,52 @@
 // Package imports
-import 'package:flutter/material.dart';
+//import 'package:flutter/material.dart'; updated to material_ui, due to change in Flutter
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
 // File imports
-import '../features/authentication/data/auth_repository.dart';
-import '../features/authentication/domain/user_model.dart';
+import '../features/presentation/auth_notifier.dart';
+import 'package:flutter/widget_previews.dart';
 import '../features/presentation/admin_dashboard.dart';
 import '../features/presentation/dormer_dashboard.dart';
 import '../features/presentation/login_screen.dart';
 
-// Sets up the app's pages and decides who can see which page
-GoRouter createRouter(Stream<AppUser?> authStream,
-  AuthRepository authRepository,
-) {
-  AppUser? user; // latest known user
-  authStream.listen((u) => user = u);
 
-  return GoRouter(
-    initialLocation: '/login',
-    refreshListenable: GoRouterRefreshStream(authStream),
-    redirect: (context, state) {
-      final isLoggingIn = state.matchedLocation == '/login';
+// Decides where a user should be, given auth status and current location.
+// Kept as a pure function so it can be unit tested without Firebase.
+String? redirectFor(AuthStatus status, String location) {
+  const publicOnly = {'/splash', '/login'};
 
-      if (user == null) return isLoggingIn ? null : '/login';
-      if (isLoggingIn) return user!.isAdmin ? '/admin' : '/home';
-      if (state.matchedLocation.startsWith('/admin') && !user!.isAdmin) {
+  switch (status) {
+    case AuthStatus.unknown:
+      return location == '/splash' ? null : '/splash';
+
+    case AuthStatus.signedOut:
+      return location == '/login' ? null : '/login';
+
+    case AuthStatus.user:
+      if (publicOnly.contains(location) || location.startsWith('/admin')) {
         return '/home';
       }
       return null;
-    },
 
-    // The list of pages in the app
+    case AuthStatus.admin:
+      if (publicOnly.contains(location) || location == '/home') {
+        return '/admin';
+      }
+      return null;
+  }
+}
 
+// Sets up the app's pages and decides who can see which page
+GoRouter createRouter(AuthNotifier auth) {
+  return GoRouter(
+    initialLocation: '/splash',
+    refreshListenable: auth,
+    redirect: (context, state) =>
+        redirectFor(auth.status, state.matchedLocation),
     routes: [
-      GoRoute(
-        path: '/login', 
-        builder: (context, state) => LoginScreen(authRepository: authRepository),
-        ),
+      GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/home',
         builder: (context, state) => const StudentHomeScreen(),
@@ -49,15 +59,17 @@ GoRouter createRouter(Stream<AppUser?> authStream,
   );
 }
 
+// Shown until the first auth event arrives
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
 
-
-// Lets GoRouter listen to a Stream (GoRouter only accepts a Listenable)
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    // Trigger one refresh right away
-    notifyListeners();
-
-    // Trigger a refresh every time the stream emits something
-    stream.listen((_) => notifyListeners());
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
+}
+//Preview of the Splash Screen
+@Preview(name: 'Splash Screen Preview')
+Widget splashScreenPreview() {
+  return const SplashScreen();
 }

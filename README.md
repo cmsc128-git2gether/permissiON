@@ -222,7 +222,7 @@ cp .env.example .env   # fill in values
 | `PermitService.listenToPermit` | `(permitId)` | `Stream<PermitModel?>`, null if missing |
 | `PermitService.listenToPendingPermits` | `()` | `Stream<List<PermitModel>>` |
 | `PermitService.cancelPermit` | `(userId, permitId)` | `Future<void>`, `StateError` on invalid |
-| `PermitService.recordTimeIn` | `(adminId, permitId, {at})` | `Future<void>`, `StateError` on invalid |
+| `PermitService.recordTimeIn` | `(permitId, {at})` | `Future<void>`, `StateError` on invalid |
 
 - Each stub's doc comment names the issue that will implement it. The implementer removes the "stub" wording when the real code is implemented.
 
