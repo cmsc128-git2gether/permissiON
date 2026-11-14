@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
+//import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_app/features/presentation/auth_notifier.dart';
 import 'app/router.dart';
 import 'features/authentication/data/auth_repository.dart'; // adjust path
 import 'firebase_options.dart';
@@ -9,15 +11,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Broadcast so both the router and the refresh listener can listen
-  final authStream = AuthRepository().authStateStream.asBroadcastStream();
+  // One notifier, it listens to the auth stream and feeds the router
+  final auth = AuthNotifier(AuthRepository());
+  final router = createRouter(auth);
 
-  runApp(MyApp(router: createRouter(authStream)));
+  runApp(MyApp(router: router));
 }
 
 class MyApp extends StatelessWidget {
-  final GoRouter router;
+
   const MyApp({super.key, required this.router});
+  final GoRouter router;
 
   // This widget is the root of your application.
   @override
