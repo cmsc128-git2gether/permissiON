@@ -50,7 +50,7 @@ void main() {
   testWidgets('shows loading spinner while signing in', (tester) async {
     // A Completer lets us hold the sign-in "in progress" until we choose
     final completer = Completer<void>();
-    final repo = FakeAuthRepository(onSignIn: (_, __) => completer.future);
+    final repo = FakeAuthRepository(onSignIn: (_, _) => completer.future);
 
     await tester.pumpWidget(wrap(LoginScreen(authRepository: repo)));
     await fillAndSubmit(tester);
@@ -66,7 +66,7 @@ void main() {
   // Errors
   testWidgets('shows friendly message on wrong password', (tester) async {
     final repo = FakeAuthRepository(
-      onSignIn: (_, __) async =>
+      onSignIn: (_, _) async =>
           throw FirebaseAuthException(code: 'wrong-password'),
     );
 
@@ -81,7 +81,7 @@ void main() {
     tester,
   ) async {
     final repo = FakeAuthRepository(
-      onSignIn: (_, __) async =>
+      onSignIn: (_, _) async =>
           throw FirebaseAuthException(code: 'user-not-found'),
     );
 
@@ -94,7 +94,7 @@ void main() {
 
   testWidgets('shows generic message on unexpected error', (tester) async {
     final repo = FakeAuthRepository(
-      onSignIn: (_, __) async => throw UnimplementedError('signIn'),
+      onSignIn: (_, _) async => throw UnimplementedError('signIn'),
     );
 
     await tester.pumpWidget(wrap(LoginScreen(authRepository: repo)));
