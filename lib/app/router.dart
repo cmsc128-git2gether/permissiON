@@ -4,10 +4,11 @@ import 'package:go_router/go_router.dart';
 
 // File imports
 import '../features/presentation/auth_notifier.dart';
+import 'package:flutter/widget_previews.dart';
+import '../features/authentication/domain/user_model.dart';
 import '../features/presentation/admin_dashboard.dart';
 import '../features/presentation/dormer_dashboard.dart';
 import '../features/presentation/login_screen.dart';
-import 'package:flutter/widget_previews.dart';
 
 
 // Decides where a user should be, given auth status and current location.
