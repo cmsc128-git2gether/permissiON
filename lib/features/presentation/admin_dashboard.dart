@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../data/auth_repository.dart';
+import '../authentication/data/auth_repository.dart';
 
 // Placeholder homepage for end_user accounts
-class StudentHomeScreen extends StatelessWidget {
-  const StudentHomeScreen({super.key});
+class AdminDashboardScreen extends StatelessWidget {
+  const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
