@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import '../authentication/data/auth_repository.dart';
 
+
 // Placeholder homepage for end_user accounts
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -17,7 +18,8 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(child: Text('Student Home')),
+      body: const Center(child: Text('Admin Home')),
+
     );
   }
 }
