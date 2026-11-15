@@ -75,32 +75,32 @@ _Firebase stores databases as collections and documents. No need for tables and 
 ```
 users/{user_id}
 	email, access_level: "end_user" | "admin"
-	updated_at: TIMESTAMP | NULL, deleted_at: TIMESTAMP | NULL
+	created_at: TIMESTAMP
+	updated_at: TIMESTAMP
+	deleted_at: TIMESTAMP | NULL
 
 admin_profiles/{user_id}
-	full_name, display_photo, position, on_duty: BOOL
+	name, display_photo
 
 end_user_profiles/{user_id}
-	full_name, display_photo, phone_num, room_num
-	active_permits, permit_history (QUERIES ONLY)
-	delinquency_count (QUERIES ONLY)
+	surname, given_name, display_photo, phone_num, room_num
+	active_permits, permit_history, delinquency_count (QUERIES ONLY)
 
 permits/{permit_id}
 	user_id, full_name, room_num
 	permit_type: "LATE" | "OVERNIGHT" | "WEEKEND"
 	destination, purpose, emergency_contact_person, emergency_contact_num
 	expected_time_in: TIMESTAMP
-	actual_time_in: TIMESTAMP | NULL (QUERIES FROM SCANNED QR)
+	actual_time_in: TIMESTAMP | NULL (QUERIES FROM CHECKIN_cODES)
 	permit_status: "PENDING" | "ACTIVE" | "CANCELLED" | "COMPLETED" | "OVERDUE" | "DENIED"
 	approved_by: admin_id, approved_at: TIMESTAMP | NULL
-	qr_id: STRING | NULL
 	created_at: TIMESTAMP
 
-qr/{qr_id}
-	permit_id, admin_id
-	status: "ACTIVE" | "SCANNED" | "CANCELLED"
+checkin_codes/{permit_id}
+	permit_id
+	code_status: "DONE" | "CANCELLED" | "EXPIRED" 
 	created_at: TIMESTAMP, expires_at: TIMESTAMP
-	scanned_at: TIMESTAMP | NULL, scanned_by: user_id | NULL
+	checkin_at: TIMESTAMP | NULL, checkin_by: user_id | NULL
 
 delinquency_logs/{delinquency_id}
 	user_id, permit_id
@@ -109,13 +109,43 @@ delinquency_logs/{delinquency_id}
 	reported_by: admin_id | NULL, created_at: TIMESTAMP | NULL
 ```
 
-### Flow
+### Summary of Rules and Flow
 
 - A user can only have one profile– either as an admin or as an end user.
-- An end user can file only one permit.
-- An admin user can approve or disapprove one or many permits.
+- An end user can have one PENDING and/or one ACTIVE permit.
+- An admin user can approve or disapprove zero or many permits.
 - An end user can have zero or many delinquencies.
-- A permit can only have one valid QR.
+- A permit can only have one valid code at a time.
+<br>
+
+__Helpers__
+- `isAuthenticated`: signed in
+- `isOwner(userId)`: signed-in user's ID == userId
+- `isAdmin/isEndUser`: determines access_level of user's document
+- `isValidPermit`: a new permit belongs to the caller, belongs to either of the permit_types, and automatically PENDING
+- `isPermitOwner(permitId)`: check permit if it belongs to the caller
+<br>
+
+__Collections__
+| Collection | Read | Create | Update | Delete
+|---|---|---|---|---|
+| `users` | owner or admin | admin-only, requested access_level is either end_user or admin | no one | admin-only, for end_user accounts |
+| `admin_profiles` | admin-only | admin-only, if the user exists and is admin in access_level | admin owner | admin-only except for their own profile |
+| `end_user_profiles` | owner or admin | admin-only, if user exists and is end_user in access_level | owner-only, for display_photo and phone_num only | admin-only |
+| `permits` | owner or admin | end_user as PENDING | admin and/or owner (specs below) | admin-only |
+| `checkin_codes` | admin-only | admin-only (specs below) | admin and/or owner (specs below) | no one |
+| `delinquency_logs` | owner or admin | admin-only | admin-only | admin-only |
+
+__Specifications of Rules for Permits and Checkin Codes__ <br>
+__Permits__
+- Admin: can set any valid permit_status, but cannot reassign the permit to another user
+- Owner: can cancel on PENDING or ACTIVE permit changing only permit_status to CANCELLED; can complete an ACTIVE permit, change only permit_status to COMPLETED iff check-in code status IS DONE and permit's actual_time_in == checkin_at
+<br>
+
+__Checkin Codes__
+- Admin: can create if permit is ACTIVE, code_status, checkin_at, and checkin_by are all null, and expires_at must be in the future; can update with cancel only on code_status
+- Owner: can update code_status to DONE, checkin_at, and checkin_by 
+<br>
 
 ## Project Structure
 
