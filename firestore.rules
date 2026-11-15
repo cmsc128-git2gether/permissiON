@@ -39,7 +39,7 @@ service cloud.firestore {
       
       // allows admin to delete or remove user records belonging to an end_user
       allow delete: if isAdmin()
-        && request.resource.data.access_level in ['end_user'];
+        && resource.data.access_level == 'end_user';
     }
     match /admin_profiles/{userId} {
       // allows admin to read own profile
@@ -88,21 +88,35 @@ service cloud.firestore {
       allow read: if isAuthenticated() 
         && (resource.data.user_id == request.auth.uid || isAdmin());
 
-      // allows update for admin status 
+      // allows update for admin status but not owner
       allow update: if (isAdmin()
         && isAuthenticated()
+        && request.resource.data.user_id == resource.data.user_id
         && request.resource.data.permit_status in 
         ['PENDING', 'ACTIVE', 'CANCELLED', 'DENIED', 'COMPLETED', 'OVERDUE'])
         
         // allows permit owner to cancel a pending or an active permit
         || (isEndUser()
         && resource.data.user_id == request.auth.uid
+        && isPermitOwner(permitId)
         && resource.data.permit_status in ['PENDING', 'ACTIVE']
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.permit_status == 'CANCELLED');
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permit_status'])
+        && request.resource.data.permit_status == 'CANCELLED')
+
+        // allows permit owner to COMPLETE an ACTIVE permit
+        // if actual_time_in is equal to checkin_at
+        // if code status is done
+        || (isEndUser()
+        && resource.data.user_id == request.auth.uid
+        && isPermitOwner(permitId)
+        && resource.data.permit_status == 'ACTIVE'
+        && resource.data.actual_time_in == get(/databases/$(database)/documents/checkin_codes/$(permitId)).data.checkin_at
+        && get(/databases/$(database)/documents/checkin_codes/$(permitId)).data.code_status == 'DONE'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permit_status'])
+        && request.resource.data.permit_status == 'COMPLETED');
       
       // only admin can delete
-      allow delete: isAdmin();
+      allow delete: if isAdmin();
     }
     match /checkin_codes/{permitId} {
       // admin-only read
@@ -110,30 +124,33 @@ service cloud.firestore {
         && isAdmin();
       
       // allow creation of checkin_codes
-      // if permit_status is active
-      // if scanned fields are null
-      // if not yet expired
+      // if checkin_status is active
+      // if used fields are null
+      // if not yet expired when requested
       allow create: if isAdmin()
-        && request.resource.data.admin_id == request.auth.uid
-        && request.resource.data.permit_status == 'ACTIVE'
-        && request.resource.data.scanned_at == null
-        && request.resource.data.scanned_by == null
+        && get(/databases/$(database)/documents/permits/$(permitId)).data.permit_status == 'ACTIVE'
+        && request.resource.data.code_status == null
+        && request.resource.data.checkin_at == null
+        && request.resource.data.checkin_by == null
         && request.resource.data.expires_at > request.time;
       
-      // allows update 
+      // allows update admin: cancel
+      // allows update of dormer: can use to update status, checkin details
       allow update: if (isAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permit_status'])
-        && request.resource.data.permit_status == 'CANCELLED')
-        // permit owner can scan 
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['code_status'])
+        && request.resource.data.code_status == 'CANCELLED')
+        
+        // permit owner can COMPLETE an ACTIVE permit 
         || (isEndUser()
-        && isPermitOwner(resource.data.permit_id)
-        && resource.data.permit_status == 'ACTIVE'
+        && isPermitOwner(permitId)
+        && get(/databases/$(database)/documents/permits/$(permitId)).data.permit_status == 'ACTIVE'
+        && resource.data.code_status == null
         && resource.data.expires_at > request.time
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['permit_status', 'scanned_at', 'scanned_by'])
-        && request.resource.data.permit_status == 'SCANNED'
-        && request.resource.data.scanned_by == request.auth.uid
-        && request.resource.data.scanned_at == request.time);
+            .hasOnly(['code_status', 'checkin_at', 'checkin_by'])
+        && request.resource.data.code_status == 'DONE'
+        && request.resource.data.checkin_by == request.auth.uid
+        && request.resource.data.checkin_at == request.time);
       
       // cannot be deleted
       allow delete: if false;
