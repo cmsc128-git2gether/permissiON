@@ -22,7 +22,7 @@ service cloud.firestore {
       let data = request.resource.data;
       return data.user_id == request.auth.uid 
         && data.type in ['LATE', 'OVERNIGHT', 'WEEKEND']
-        && data.status == 'PENDING';
+        && data.permit_status == 'PENDING';
     }
     function isPermitOwner(permitId) {
       return get(/databases/$(database)/documents/permits/$(permitId)).data.user_id == request.auth.uid;
@@ -91,15 +91,15 @@ service cloud.firestore {
       // allows update for admin status 
       allow update: if (isAdmin()
         && isAuthenticated()
-        && request.resource.data.status in 
+        && request.resource.data.permit_status in 
         ['PENDING', 'ACTIVE', 'CANCELLED', 'DENIED', 'COMPLETED', 'OVERDUE'])
         
         // allows permit owner to cancel a pending or an active permit
         || (isEndUser()
         && resource.data.user_id == request.auth.uid
-        && resource.data.status in ['PENDING', 'ACTIVE']
+        && resource.data.permit_status in ['PENDING', 'ACTIVE']
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status == 'CANCELLED');
+        && request.resource.data.permit_status == 'CANCELLED');
       
       // only admin can delete
       allow delete: isAdmin();
@@ -115,23 +115,23 @@ service cloud.firestore {
       // if not yet expired
       allow create: if isAdmin()
         && request.resource.data.admin_id == request.auth.uid
-        && request.resource.data.status == 'ACTIVE'
+        && request.resource.data.permit_status == 'ACTIVE'
         && request.resource.data.scanned_at == null
         && request.resource.data.scanned_by == null
         && request.resource.data.expires_at > request.time;
       
       // allows update 
       allow update: if (isAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && request.resource.data.status == 'CANCELLED')
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permit_status'])
+        && request.resource.data.permit_status == 'CANCELLED')
         // permit owner can scan 
         || (isEndUser()
         && isPermitOwner(resource.data.permit_id)
-        && resource.data.status == 'ACTIVE'
+        && resource.data.permit_status == 'ACTIVE'
         && resource.data.expires_at > request.time
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['status', 'scanned_at', 'scanned_by'])
-        && request.resource.data.status == 'SCANNED'
+            .hasOnly(['permit_status', 'scanned_at', 'scanned_by'])
+        && request.resource.data.permit_status == 'SCANNED'
         && request.resource.data.scanned_by == request.auth.uid
         && request.resource.data.scanned_at == request.time);
       
