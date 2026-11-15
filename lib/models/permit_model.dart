@@ -117,6 +117,7 @@ bool isStalePendingAt(DateTime now) =>
       'approved_by': approvedBy,
       'approved_at': approvedAt == null ? null : Timestamp.fromDate(approvedAt!),
       'qr_id': qrId,
+      'floor': floor,
       'created_at': Timestamp.fromDate(createdAt),
     };
   }
