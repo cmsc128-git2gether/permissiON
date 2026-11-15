@@ -30,6 +30,8 @@ class EndUserProfileModel {
   final String phoneNum;
   /// The user's assigned room number. Empty string if none is stored.
   final String roomNum;
+  //the floor of the user's assigned room. Null if not set.
+  final int? floor;
 
   // No delinquency_count, permit_history, or active_permits:
   // those are queried from the delinquency logs and permits collections.
@@ -50,6 +52,7 @@ class EndUserProfileModel {
     this.displayPhoto,
     required this.phoneNum,
     required this.roomNum,
+    this.floor,
   });
 
   /// Builds an [EndUserProfileModel] from a Firestore document map.
@@ -66,6 +69,7 @@ class EndUserProfileModel {
         displayPhoto: json['display_photo'] as String?,
         phoneNum: json['phone_num'] as String? ?? '',
         roomNum: json['room_num'] as String? ?? '',
+        floor: (json['floor'] as num?)?.toInt(),
       );
 
   /// Converts this model into a map for saving to Firestore.
@@ -78,5 +82,6 @@ class EndUserProfileModel {
         'display_photo': displayPhoto,
         'phone_num': phoneNum,
         'room_num': roomNum,
+        'floor': floor,
       };
 }
