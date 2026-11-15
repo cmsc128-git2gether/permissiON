@@ -110,35 +110,44 @@ class PermitService {
   /// Uses the injected clock unless [at] is given. Also writes time_in_recorded_by.
   /// Throws ArgumentError if [at] is in the future.
   /// Throws StateError if the permit is missing, not ACTIVE, or already timed in.
+  //admin manual override of a permit's status, for now throws unimplemented error
+  // issue #44
   Future<void> recordTimeIn(
-    String adminId,
     String permitId, {
     DateTime? at,
   }) async {
+    // validates time is not future
     if (at != null && at.isAfter(clock.now())) {
       throw ArgumentError('Time-in cannot be in the future.');
     }
 
     final ref = _permits.doc(permitId);
+    // final qr = _db.collection(qrId);
+    // jic of using the qr
 
+    // transaction
     await _db.runTransaction((transaction) async {
       final snapshot = await transaction.get(ref);
 
+      // failure messages, StateErrors
+      // missing permit
       if (!snapshot.exists) {
         throw StateError('Permit $permitId does not exist');
       }
-      final data = snapshot.data()!;
-      if (data['permit_status'] != PermitStatus.active.value) {
+      // non-ACTIVE permit
+      if (snapshot.data()!['permit_status'] != PermitStatus.active.value) {
         throw StateError('Only ACTIVE permits can have a recorded time-in.');
       }
-      if (data['actual_time_in'] != null) {
+      // already has a time-in
+      if (snapshot.data()!['actual_time_in'] != null) {
         throw StateError('Permit $permitId already has a recorded time-in.');
       }
 
+      //write
       transaction.update(ref, {
-        'actual_time_in': toTimestamp(at ?? clock.now()),
-        'permit_status': PermitStatus.completed.value,
-        'time_in_recorded_by': adminId,
+        //'actual_time_in': at != null ? toTimestamp(at) : FieldValue.serverTimestamp(),
+        'actual_time_in': toTimestamp(at ?? clock.now()), // injected clock.now() instead of server timestamp
+        'permit_status':PermitStatus.completed.value,
       });
     });
   }
@@ -153,12 +162,46 @@ class PermitService {
       Stream.value(const []);
 
   /// Admin review queue: PENDING only, oldest first. Issue #43.
-  Stream<List<PermitModel>> listenToPendingPermits() => Stream.value(const []);
+  //admin history of all pending permits to be implemented in issue #43
+  Stream<List<PermitModel>> listenToPendingPermits({int? limit}) {
+    var query = _permits
+        .where('permit_status', isEqualTo: PermitStatus.pending.value)
+        .orderBy('created_at'); // oldest or first requests first
+    if (limit != null) query = query.limit(limit);
+
+    return query.snapshots().map((snap) =>
+        snap.docs.map((d) => PermitModel.fromFirestore(d, null)).toList());
+  }
 
   /// Owner withdraws a PENDING permit: PENDING -> CANCELLED, in a transaction.
   /// Throws StateError if missing, not owned by [userId], or not PENDING. Issue #43.
+  //user cancels a pending permit to be implemented in issue #43
   Future<void> cancelPermit(String userId, String permitId) async {
-    throw UnimplementedError('cancelPermit');
+    final ref = _permits.doc(permitId);
+
+    //----------------- transaction from snapshot --------------------
+    return _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+
+    //failure/guard messages
+      if (!snapshot.exists) {
+        throw StateError('Permit $permitId does not exist');
+      }
+
+      if (snapshot.data()!['user_id'] != userId) {
+        throw StateError('Permit $permitId does not belong to user $userId');
+      }
+
+      if (snapshot.data()!['permit_status'] != PermitStatus.pending.value 
+        && snapshot.data()!['permit_status'] != PermitStatus.active.value) {
+        throw StateError('Only PENDING or ACTIVE permits can be cancelled.');
+      }
+
+      //write
+      transaction.update(ref, {
+        'permit_status': PermitStatus.cancelled.value,
+      });
+    });
   }
 
   /// Owner extends an ACTIVE permit's expected return.
@@ -190,50 +233,3 @@ class PermitService {
     throw UnimplementedError('expireStalePending');
   }
 }
-
-// ===========================================================================
-  // Contract stubs: signatures only. Behavior comes from the issue noted.
-  // ===========================================================================
-
-  /// Admin master list, newest first. All permits when [filter] is null.
-  /// Implemented in issue #42 (filters in the filter issue).
-  Stream<List<PermitModel>> listenToAllPermits({PermitFilter? filter}) =>
-      Stream.value(const []);
-
-  /// Admin review queue: PENDING only, oldest first. Issue #43.
-  Stream<List<PermitModel>> listenToPendingPermits() => Stream.value(const []);
-
-  /// Owner withdraws a PENDING permit: PENDING -> CANCELLED, in a transaction.
-  /// Throws StateError if missing, not owned by [userId], or not PENDING. Issue #43.
-  Future<void> cancelPermit(String userId, String permitId) async {
-    throw UnimplementedError('cancelPermit');
-  }
-
-  /// Owner extends an ACTIVE permit's expected return.
-  /// Throws StateError if missing, not owned, not ACTIVE, or
-  /// [newExpectedTimeIn] is not after the current one.
-  Future<void> extendPermit(
-    String userId,
-    String permitId,
-    DateTime newExpectedTimeIn,
-  ) async {
-    throw UnimplementedError('extendPermit');
-  }
-
-  /// Owner changes the type of a PENDING or ACTIVE permit.
-  /// An ACTIVE permit goes back to PENDING for re-approval.
-  /// Throws StateError if missing, not owned, or in another status.
-  Future<void> changePermitType(
-    String userId,
-    String permitId,
-    PermitType type,
-  ) async {
-    throw UnimplementedError('changePermitType');
-  }
-
-  /// The 12 AM rule: denies every PENDING permit created before today's
-  /// 12:00 AM (Asia/Manila) with reason "Not reviewed before 12:00 AM".
-  /// Returns how many were denied. Called by the admin dashboard on load.
-  Future<int> expireStalePending() async {
-    throw UnimplementedError('expireStalePending');
-  }
