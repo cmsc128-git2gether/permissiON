@@ -7,7 +7,7 @@ class AppColors {
   static const action = Color(0xFF5E57B5);    // main buttons, "+" button
   static const flow = Color(0xFFA83D66);      // filing wizard
   static const heading = Color(0xFF7A1F3D);   // section headings
-  static const cardBg = Color(0xFFFDF2F4);
+  static const cardBg = Color.fromARGB(255, 252, 244, 248);
   static const fieldBg = Color(0xFFFFF5F7);
   static const ink = Color(0xFF1B1B1F);
 }
