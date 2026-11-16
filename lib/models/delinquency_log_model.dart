@@ -33,7 +33,7 @@ class DelinquencyLogModel {
       userId: data['user_id'] ?? '',
       permitId: data['permit_id'],
       violationType: ViolationType.fromString(
-          data['violation_type'] ?? ViolationType.lateCheckIn.value),
+          data['violation_type'] ?? ViolationType.lateReturn.value),
       violationDescription: data['violation_description'] ?? '',
       reportedBy: data['reported_by'],
       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),

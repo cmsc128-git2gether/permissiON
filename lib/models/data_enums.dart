@@ -97,8 +97,8 @@ enum QrStatus {
 
 // violation types
 enum ViolationType {
-    noFiledPermit('NO FILED PERMIT'),
-    lateCheckIn('LATE CHECK IN');
+    noFiledPermit('NO_FILED_PERMIT'),
+    lateReturn('LATE_RETURN');
 
     // constructor storing the string passed to value
     const ViolationType(this.value);
@@ -114,20 +114,4 @@ enum ViolationType {
         orElse: () => throw ArgumentError('Invalid Violation Type: "$db"'),
     );
 
-}
-
-
-// delinquency reason
-enum DelinquencyReason {
-  lateReturn('LATE_RETURN'),
-  overdue('OVERDUE'),
-  lateFiling('LATE_FILING');
-
-  const DelinquencyReason(this.value);
-  final String value; // to firestore
-
-  static DelinquencyReason fromString(String db) => values.firstWhere(
-        (e) => e.value == db,
-        orElse: () => throw ArgumentError('Invalid Delinquency Reason: "$db"'),
-      );
 }
