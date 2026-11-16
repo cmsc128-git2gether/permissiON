@@ -104,7 +104,7 @@ checkin_codes/{permit_id}
 
 delinquency_logs/{delinquency_id}
 	user_id, permit_id
-	violation_type: "LATE CHECK IN" | "NO FILED PERMIT"
+	violation_type: "LATE RETURN" | "NO FILED PERMIT"
 	violation_description
 	reported_by: admin_id | NULL, created_at: TIMESTAMP | NULL
 ```
