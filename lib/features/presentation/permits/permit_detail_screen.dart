@@ -2,12 +2,14 @@ import 'package:material_ui/material_ui.dart';
 import 'package:permission_app/models/permit_model.dart';
 import 'package:permission_app/models/data_enums.dart';
 import 'package:permission_app/services/permit_service.dart';
+import 'package:permission_app/features/presentation/widgets/status_chip.dart';
+import 'package:permission_app/features/presentation/widgets/late_filing_indicator.dart';
 
 class PermitDetailScreen extends StatelessWidget {
   const PermitDetailScreen({
     super.key,
     required this.permitId,
-    required this.service,   //injected, so tests pass a fake-backed service
+    required this.service, //injected, so tests pass a fake-backed service
   });
 
   final String permitId;
@@ -38,9 +40,37 @@ class PermitDetailScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(p.permitStatus.value,
-                  style: Theme.of(context).textTheme.headlineSmall),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Room: ${p.roomNum}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+                  StatusChip(p.permitStatus),
+                ],
+              ),
+
+              // Show late filing indicator if applicable
+              if (p.isLateFiling) ...[
+                const SizedBox(height: 12),
+                LateFilingIndicator(
+                  isLateFiling: p.isLateFiling,
+                  time: p.filedAtFormatted,
+                  lateFilingReasonText: p.lateFilingReasonOrDefault,
+                ),
+              ],
+
               const SizedBox(height: 12),
+
+              // Other permit details
               Text('Type: ${p.permitType.value}'),
               Text('Destination: ${p.destination}'),
               Text('Purpose: ${p.purpose}'),
