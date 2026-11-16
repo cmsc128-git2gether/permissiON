@@ -106,7 +106,6 @@ class RecordTimeInDialog extends StatefulWidget {
 class _RecordTimeInDialogState extends State<RecordTimeInDialog> {
   DateTime ? _adjusted; // null = record as "now"
   //admin sees the problem before confirming, as it mirrors the service rule
-  bool get _isFuture => _adjusted != null && _adjusted!.isAfter(clock.now());
 
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
@@ -132,15 +131,7 @@ class _RecordTimeInDialogState extends State<RecordTimeInDialog> {
               ? 'Record this permit as returned now?'
               : 'Record this permit as returned at '
                   '${PermitDetailScreen._hhmm(_adjusted!)}?'),
-          if (_isFuture)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                'Time-in cannot be in the future.',
-                key: const Key('future_time_error'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
+
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -150,12 +141,6 @@ class _RecordTimeInDialogState extends State<RecordTimeInDialog> {
                 onPressed: _pickTime,
                 child: Text(_adjusted == null ? 'Adjust time' : 'Change time'),
               ),
-              if (_adjusted != null)
-                TextButton(
-                  key: const Key('reset_time_button'),
-                  onPressed: () => setState(() => _adjusted = null),
-                  child: const Text('Use current time'),
-                ),
             ],
           ),
         ],
@@ -167,8 +152,7 @@ class _RecordTimeInDialogState extends State<RecordTimeInDialog> {
         ),
         TextButton(
           key: const Key('confirm_time_in_button'),
-          onPressed:
-              _isFuture ? null : () => Navigator.pop(context, TimeInChoice(_adjusted)),
+          onPressed: () => Navigator.pop(context, TimeInChoice(_adjusted)),
           child: const Text('Confirm'),
         ),
       ],
