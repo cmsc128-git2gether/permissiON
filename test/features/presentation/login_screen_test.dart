@@ -14,7 +14,7 @@ Widget wrap(Widget child) => MaterialApp(home: child);
 // Types valid credentials and taps the login button
 Future<void> fillAndSubmit(WidgetTester tester) async {
   await tester.enterText(find.byKey(const Key('email_field')), 'a@b.com');
-  await tester.enterText(find.byKey(const Key('password_field')), 'secret1');
+  await tester.enterText(find.byKey(const Key('password_field')), 'secret123');
   await tester.tap(find.byKey(const Key('login_button')));
   await tester.pump();
 }
@@ -44,7 +44,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Enter a valid email'), findsOneWidget);
-    expect(find.text('Password must be at least 6 characters'), findsOneWidget);
+    expect(find.text('Password must be at least 8 characters'), findsOneWidget);
   });
 
   // Loading state
@@ -115,8 +115,9 @@ void main() {
 
     final repo = FakeAuthRepository(
       auth: auth,
-      onSignIn: (e, p) =>
-          auth.signInWithEmailAndPassword(email: e, password: p),
+      onSignIn: (e, p) async {
+        await auth.signInWithEmailAndPassword(email: e, password: p);
+      },
     );
 
     await tester.pumpWidget(
