@@ -1,8 +1,25 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:permission_app/features/authentication/data/auth_repository.dart';
+import 'package:permission_app/errors/login_auth_error_messages.dart';
+import 'package:permission_app/errors/login_instant_feedback.dart';
 
-// Placeholder login screen 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key, required this.authRepository, this.onSuccess});
+
+  final AuthRepository authRepository;
+  final VoidCallback? onSuccess;
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>(); // lets us call validate()
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  bool _loading = false; // true while waiting for Firebase
+  String? _error; // red message shown above the buttons
 
   @override
   void dispose() {
