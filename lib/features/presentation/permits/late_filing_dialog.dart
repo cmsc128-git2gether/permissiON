@@ -12,8 +12,8 @@ class LateFilingDialog extends StatefulWidget {
 }
 
 class _LateFilingDialogState extends State<LateFilingDialog> {
-  final _formKey = GlobalKey<FormState>();
   final _reason = TextEditingController();
+  String? _error;
 
   @override
   void dispose() {
@@ -22,38 +22,41 @@ class _LateFilingDialogState extends State<LateFilingDialog> {
   }
 
   void _submit() {
-    if (_formKey.currentState!.validate()) {
-      Navigator.of(context).pop(_reason.text.trim());
+    final text = _reason.text.trim();
+    if (text.isEmpty) {
+      setState(() => _error = 'Reason is required');
+      return;
     }
+    Navigator.of(context).pop(text);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Late filing'),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Filing after 6:00 PM will be flagged for admin review. '
-              'Please input a reason why you are filing late here.',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Filing after 6:00 PM will be flagged for admin review. '
+            'Please explain why you are filing late.',
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: lateReasonFieldKey,
+            controller: _reason,
+            maxLength: 200,
+            maxLines: 3,
+            onChanged: (_) {
+              if (_error != null) setState(() => _error = null);
+            },
+            decoration: InputDecoration(
+              labelText: 'Reason for late filing',
+              errorText: _error,
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: lateReasonFieldKey,
-              controller: _reason,
-              maxLength: 200,
-              maxLines: 3,
-              decoration:
-                  const InputDecoration(labelText: 'Reason for late filing'),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Reason is required!' : null,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       actions: [
         TextButton(
