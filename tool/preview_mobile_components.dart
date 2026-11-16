@@ -3,7 +3,6 @@ import 'package:permission_app/models/permit_model.dart';
 import 'package:permission_app/features/presentation/widgets/empty_state.dart';
 import 'package:permission_app/features/presentation/widgets/error_state.dart';
 import 'package:permission_app/features/presentation/widgets/permit_card.dart';
-import 'package:permission_app/features/presentation/widgets/step_indicator.dart';
 import 'package:permission_app/models/data_enums.dart';
 import 'package:permission_app/theme/app_theme.dart';
 
