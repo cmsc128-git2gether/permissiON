@@ -13,10 +13,14 @@ class DelinquencyService {
   Stream<List<DelinquencyLogModel>> listenToUserDelinquencies(String userId) =>
       Stream.value(const []);
 
+  // count of student's log
+  Future<int> countForUser(String userId, {ViolationType? type}) async =>
+      throw UnimplementedError('countForUser');
+
   /// Creates a log, copying user_id from the permit. Idempotent: one log per
-  /// (permitId, reason), using the doc id '${permitId}_${reason.value}'.
+  /// (permitId, type), using the doc id '${permitId}_${type.value}'.
   /// Throws StateError if the permit does not exist.
-  Future<void> flagPermit(String permitId, DelinquencyReason reason) async =>
+  Future<void> flagPermit(String permitId, ViolationType type, String description) async =>
       throw UnimplementedError('flagPermit');
 
   /// Marks a log resolved with an optional note, in a transaction.
