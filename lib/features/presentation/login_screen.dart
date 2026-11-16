@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:permission_app/features/authentication/data/auth_repository.dart';
 import 'package:permission_app/errors/login_auth_error_messages.dart';
 import 'package:permission_app/errors/login_instant_feedback.dart';
