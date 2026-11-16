@@ -1,3 +1,5 @@
+// helper file to run login_screen_test.dart
+
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
@@ -6,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:permission_app/features/presentation/login_screen.dart';
 // import 'package:permission_app/features/authentication/data/auth_repository.dart';
-import '../authentication/fake_auth_repository_test.dart';
+import '../authentication/fake_auth_repository.dart';
 
 // Puts the screen inside a MaterialApp, which widgets need to render
 Widget wrap(Widget child) => MaterialApp(home: child);
