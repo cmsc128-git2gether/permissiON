@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_app/models/data_enums.dart';
 
+const int kDefaultFloor = 1;
+const int kMaxFloor = 2;
 
 // Model for a permit, stored at permits/{permit_id}
 class PermitModel {
