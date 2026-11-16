@@ -17,7 +17,7 @@ void main() {
         id: 'd1',
         userId: 'u1',
         permitId: 'p1',
-        violationType: ViolationType.lateCheckIn,
+        violationType: ViolationType.lateReturn,
         violationDescription: 'Returned 2 hours late',
         reportedBy: 'admin1',
         createdAt: DateTime.utc(2026, 10, 31),
@@ -40,7 +40,7 @@ void main() {
             id: 'd1',
             userId: 'u1',
             permitId: 'p1',
-            violationType: ViolationType.lateCheckIn,
+            violationType: ViolationType.lateReturn,
             violationDescription: 'Returned 2 hours late',
             reportedBy: 'admin1',
             createdAt: created,
@@ -50,7 +50,7 @@ void main() {
       expect(loaded.id, 'd1');
       expect(loaded.userId, 'u1');
       expect(loaded.permitId, 'p1');
-      expect(loaded.violationType, ViolationType.lateCheckIn);
+      expect(loaded.violationType, ViolationType.lateReturn);
       expect(loaded.violationDescription, 'Returned 2 hours late');
       expect(loaded.reportedBy, 'admin1');
       expect(loaded.createdAt!.toUtc(), created);
@@ -75,7 +75,7 @@ void main() {
       await col.doc('d3').set(DelinquencyLogModel(
             id: 'd3',
             userId: 'u1',
-            violationType: ViolationType.lateCheckIn,
+            violationType: ViolationType.lateReturn,
             violationDescription: '',
           ));
 
@@ -88,7 +88,7 @@ void main() {
       await col.doc('d3').set(DelinquencyLogModel(
             id: 'd3',
             userId: 'u1',
-            violationType: ViolationType.lateCheckIn,
+            violationType: ViolationType.lateReturn,
             violationDescription: '',
           ));
 
