@@ -1,30 +1,53 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_app/models/data_enums.dart';
 import 'package:permission_app/models/permit_model.dart';
 
-class AdminPermitHistoryScreen extends StatelessWidget {
+// Admin-only screen (restricted to admins only by the router) listing every permit residents have filed, where newest ones are shown first
+class AdminPermitHistoryScreen extends StatefulWidget {
+  // Injected stream is used during widget tests; firestore lets tests
+  // run the real query against a fake database.
   final Stream<List<PermitModel>>? permitsStream;
+  final FirebaseFirestore? firestore;
 
   const AdminPermitHistoryScreen({
     super.key,
     this.permitsStream,
+    this.firestore,
   });
 
-  // Listen to all permits, newest submissions first.
-  // An injected stream is used during widget tests.
-  Stream<List<PermitModel>> listenToAllPermits() {
-    if (permitsStream != null) {
-      return permitsStream!;
-    }
+  @override
+  State<AdminPermitHistoryScreen> createState() =>
+      _AdminPermitHistoryScreenState();
+}
 
-    return PermitModel.collection
-        .orderBy('created_at', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) =>
-              snapshot.docs.map((doc) => doc.data()).toList(),
-        );
+class _AdminPermitHistoryScreenState extends State<AdminPermitHistoryScreen> {
+  // Created once so a rebuild doesn't open a new Firestore listener
+  late final Stream<List<PermitModel>> _permits;
+
+  @override
+  void initState() {
+    super.initState();
+    _permits = listenToAllPermits();
   }
 
+  // Listen to all permits, newest submissions first.
+  Stream<List<PermitModel>> listenToAllPermits() {
+    final injected = widget.permitsStream;
+    if (injected != null) {
+      return injected;
+    }
+
+    // each document is converted to a PermitModel
+    // created_at is written on every permit so ordering on it never loses documents
+    return PermitModel.collectionOf(
+            widget.firestore ?? FirebaseFirestore.instance)
+        .orderBy('created_at', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  //placeholder for now 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,7 +59,7 @@ class AdminPermitHistoryScreen extends StatelessWidget {
         centerTitle: false,
       ),
       body: StreamBuilder<List<PermitModel>>(
-        stream: listenToAllPermits(),
+        stream: _permits,
         builder: (context, snapshot) {
           // Loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -47,19 +70,20 @@ class AdminPermitHistoryScreen extends StatelessWidget {
 
           // Error state
           if (snapshot.hasError) {
-            return Center(
+            return const Center(
+              key: Key('permit-error-state'),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline,
                     size: 48,
                     color: Colors.red,
                   ),
-                  const SizedBox(height: 12),
-                  const Text('Unable to load permit history.'),
-                  const SizedBox(height: 4),
-                  const Text('Please try again later'),
+                  SizedBox(height: 12),
+                  Text('Unable to load permit history.'),
+                  SizedBox(height: 4),
+                  Text('Please try again later'),
                 ],
               ),
             );
@@ -70,6 +94,7 @@ class AdminPermitHistoryScreen extends StatelessWidget {
           // Empty state
           if (permits.isEmpty) {
             return const Center(
+              key: Key('permit-empty-state'),
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Column(
@@ -116,12 +141,14 @@ class AdminPermitHistoryScreen extends StatelessWidget {
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                   itemCount: permits.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final permit = permits[index];
 
-                    return _PermitHistoryCard(permit: permit);
+                    return _PermitHistoryCard(
+                      key: Key('permit-row-${permit.id}'),
+                      permit: permit,
+                    );
                   },
                 ),
               ),
@@ -136,19 +163,22 @@ class AdminPermitHistoryScreen extends StatelessWidget {
 class _PermitHistoryCard extends StatelessWidget {
   final PermitModel permit;
 
-  const _PermitHistoryCard({required this.permit});
+  const _PermitHistoryCard({super.key, required this.permit});
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'approved':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
-      case 'pending':
+//tbf
+  Color _getStatusColor(PermitStatus status) {
+    switch (status) {
+      case PermitStatus.pending:
         return Colors.orange;
-      case 'completed':
+      case PermitStatus.active:
+        return Colors.green;
+      case PermitStatus.denied:
+        return Colors.red;
+      case PermitStatus.completed:
         return Colors.blue;
-      default:
+      case PermitStatus.overdue:
+        return Colors.deepOrange;
+      case PermitStatus.cancelled:
         return Colors.grey;
     }
   }
@@ -172,7 +202,7 @@ class _PermitHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = permit.permitStatus.value;
-    final statusColor = _getStatusColor(status);
+    final statusColor = _getStatusColor(permit.permitStatus);
 
     return Card(
       elevation: 1,
@@ -204,7 +234,7 @@ class _PermitHistoryCard extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.12),
+                    color: statusColor.withAlpha(31),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
