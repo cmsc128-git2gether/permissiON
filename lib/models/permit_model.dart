@@ -118,6 +118,9 @@ bool isStalePendingAt(DateTime now) =>
       'approved_at': approvedAt == null ? null : Timestamp.fromDate(approvedAt!),
       'qr_id': qrId,
       'created_at': Timestamp.fromDate(createdAt),
+      'floor': floor,
+      'is_late_filing': isLateFiling,
+      'late_filing_reason': lateFilingReason,
     };
   }
 
