@@ -500,4 +500,44 @@ void main() {
       });
     });
   });
+
+  group('listenToAllPermits', () {
+    final base = DateTime(2026, 11, 19, 8, 0);
+
+    Future<void> seed(String id, String userId, DateTime createdAt,
+        {PermitStatus status = PermitStatus.pending}) async {
+      final p = createMockPermit(id: id, userId: userId, status: status);
+      await db.collection('permits').doc(id).set({
+        ...p.toFirestore(),
+        'created_at': Timestamp.fromDate(createdAt),
+      });
+    }
+
+    test('permits from several users come back newest first', () async {
+      await seed('old', 'user_1', base);
+      await seed('new', 'user_2', base.add(const Duration(hours: 2)));
+      await seed('mid', 'user_3', base.add(const Duration(hours: 1)),
+          status: PermitStatus.active);
+
+      final list = await permitService.listenToAllPermits().first;
+
+      expect(list.map((p) => p.id), ['new', 'mid', 'old']);
+    });
+
+    test('emits an empty list when there are no permits', () async {
+      final list = await permitService.listenToAllPermits().first;
+
+      expect(list, isEmpty);
+    });
+
+    test('limit caps the results, keeping the newest', () async {
+      await seed('a', 'user_1', base);
+      await seed('b', 'user_1', base.add(const Duration(hours: 1)));
+      await seed('c', 'user_1', base.add(const Duration(hours: 2)));
+
+      final list = await permitService.listenToAllPermits(limit: 2).first;
+
+      expect(list.map((p) => p.id), ['c', 'b']);
+    });
+  });
 }
