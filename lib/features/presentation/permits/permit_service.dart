@@ -97,7 +97,6 @@ class PermitService {
 
     return _db.runTransaction((transaction) async {
       final snapshot = await transaction.get(ref);
-
       if (!snapshot.exists) {
         throw StateError('Permit $permitId does not exist');
       }
@@ -117,6 +116,8 @@ class PermitService {
 
   /// Admin manually records the actual return time: ACTIVE -> COMPLETED.
   /// Uses the injected clock unless [at] is given. Also writes time_in_recorded_by.
+  /// Throws ArgumentError if [at] is in the future.
+  /// Throws StateError if the permit is missing, not ACTIVE, or already timed in.
   Future<void> recordTimeIn(
     String adminId,
     String permitId, {
@@ -157,13 +158,12 @@ class PermitService {
   Future<String> generateCheckinCode(String adminId, String permitId) async {
     final permitRef = _permits.doc(permitId);
     final codeRef = _checkinCodes.doc(permitId);
-
-    // Generated outside the transaction so a retry reuses the same code.
     final code = _random.nextInt(1000000).toString().padLeft(6, '0');
 
     await _db.runTransaction((transaction) async {
       final snapshot = await transaction.get(permitRef);
 
+      
       if (!snapshot.exists) {
         throw StateError('Permit $permitId does not exist');
       }
@@ -178,7 +178,6 @@ class PermitService {
         throw StateError('Permit $permitId already has a recorded time-in.');
       }
 
-      // set() without merge replaces any older code.
       transaction.set(codeRef, {
         'code': code,
         'expires_at': Timestamp.fromDate(clock.now().add(checkinCodeLifetime)),
@@ -202,9 +201,6 @@ class PermitService {
     String permitId,
     String code,
   ) async {
-    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
-      throw StateError('Wrong or expired code');
-    }
     try {
       await _permits.doc(permitId).update({
         'permit_status': PermitStatus.completed.value,
