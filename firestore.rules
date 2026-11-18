@@ -36,24 +36,8 @@ service cloud.firestore {
     function checkinCodePath(permitId) {
       return /databases/$(database)/documents/checkin_codes/$(permitId);
     }
-    // a permit that can still be timed in
-    function isOpenPermit(permit){
-      return permit.permit_status in ['ACTIVE', 'OVERDUE'] && permit.get('actual_time_in', null) == null;
-    }
-    //shape of a code document written by an admin
-    function isValidCheckinCodeDoc(){
-      let d = request.resource.data;
-      return d.keys().hasOnly(['code', 'expires_at', 'created_by'])
-        && d.keys().hasAll(['code', 'expires_at', 'created_by'])
-        && d.code is string
-        && d.code.matches('[0-9]{6}')
-        && d.created_by == request.auth.uid
-        && d.expires_at is timestamp
-        && d.expires_at > request.time
-        // admin device clock can be off; never allow a window beyond 10 minutes
-        && d.expires_at <= request.time + duration.value(10, 'm');
-      
-    }
+
+
 
     //=== RULES FOR COLLECTIONS ===
     match /users/{userId} {
@@ -119,9 +103,7 @@ service cloud.firestore {
       allow read: if isAuthenticated() 
         && (resource.data.user_id == request.auth.uid || isAdmin());
 
-      //ADMIN: review a permit and record time-in.
-      // Field-limited, but no status-flow checks here, the service layer
-      // (updatePermitStatus / recordTimeIn) enforces the transitions.
+      // allows update for admin status but not owner
 
       allow update: if 
       (isAdmin()
@@ -131,8 +113,7 @@ service cloud.firestore {
              'permit_status', 'approved_by', 'approved_at', 'disapproval_reason', 
              'actual_time_in', 'time_in_recorded_by'
            ]))
-      //OWNER: cancel a PENDING or ACTIVE permit
-      // OVERDUE is intentionally excluded, a late student cannot withdraw
+     // allows permit owner to cancel a pending or an active permit
      ||
       (isEndUser()
         && resource.data.user_id == request.auth.uid
@@ -140,18 +121,10 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permit_status'])
         && request.resource.data.permit_status == 'CANCELLED')
 
-       // OWNER: complete an ACTIVE with no time-in yet, 
-       // by submiting the admin's check-in code 
-       //Requires the code to match checin_codes.{permitId}, request.time is before 
-       //expires_at, and actual_time_in == request.time (serverTimestamp())
-       //
-       //RISK, a student could guess the code
-      //
-      // The code has 6 digits, so there are 1,000,000 possible codes
-      // A student can write a small script that tries many codes quickly while 
-      // the code is still valid, for 5 minutes. A wrong guess is simply rejected, and 
-      // Firestore rules cannot remember how many wrong guesses someone already made, 
-      // so there is no way to say "stop after 5 tries" here.
+       // owner completes an ACTIVE permit with no time-in by submitting the
+      // admin's check-in code.
+      // Risk: the 6-digit code can be guessed by a script within 5 minutes.
+      // Rules cannot count failed attempts.
       || 
       (isEndUser()
         && resource.data.user_id == request.auth.uid
@@ -173,20 +146,13 @@ service cloud.firestore {
      
         
     match /checkin_codes/{permitId} {
-      // admin-only read: students must never be able to read the code
-      allow read: if isAdmin();      
+      // admin-only read and write; students cannot read it
+      allow read: if isAdmin();
 
-      //admin creates the code for an open permit(ACTIVE or OVERDUE, no time-in)
-      // with valid shape, exact keys, 6 digits, expires withnin 10 minutes
-      allow create: if isAdmin()
-        && isOpenPermit(get(/databases/$(database)/documents/permits/$(permitId)).data)
-        && isValidCheckinCodeDoc();
-
-      // admin replaces an older code. A transaction set() on an existing
-      // document is an update, so it needs its own rule.
-      allow update: if isAdmin()
-        && isOpenPermit(get(/databases/$(database)/documents/permits/$(permitId)).data)
-        && isValidCheckinCodeDoc();
+      // permit must be open and the code not already expired (as in #58)
+      allow create, update: if isAdmin()
+        && get(/databases/$(database)/documents/permits/$(permitId)).data.permit_status in ['ACTIVE', 'OVERDUE']
+        && request.resource.data.expires_at > request.time;
 
       // cannot be deleted
       allow delete: if false;
