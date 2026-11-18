@@ -39,32 +39,142 @@ void main() {
   });
 
   group('PermitService: isAfterFilingCutoff', () {
-    test('false before 6 PM, true at and after', () {
-      expect(PermitService.isAfterFilingCutoff(DateTime(2026, 11, 10, 17, 59)), isFalse);
-      expect(PermitService.isAfterFilingCutoff(DateTime(2026, 11, 10, 18)), isTrue);
+    test('false before 6 PM, true at and after (Manila Time)', () {
+      // 17:59 Manila = 09:59 UTC
+      final beforeCutoffUtc = DateTime.utc(2026, 11, 10, 9, 59);
+      expect(PermitService.isAfterFilingCutoff(beforeCutoffUtc), isFalse);
+
+      // 18:00 Manila = 10:00 UTC
+      final atCutoffUtc = DateTime.utc(2026, 11, 10, 10, 0);
+      expect(PermitService.isAfterFilingCutoff(atCutoffUtc), isTrue);
+      
+      // 18:01 Manila = 10:01 UTC
+      final afterCutoffUtc = DateTime.utc(2026, 11, 10, 10, 1);
+      expect(PermitService.isAfterFilingCutoff(afterCutoffUtc), isTrue);
     });
   });
 
   group('PermitService: createPermit', () {
     test('creates a permit document with initialized and defaulted fields for a user', () async {
-      final inputPermit = createMockPermit(id: '', userId: 'user_123', status: PermitStatus.active);
+      // Run before the cutoff (e.g., 17:00 Manila = 09:00 UTC) to avoid late filing rules
+      final beforeCutoff = DateTime.utc(2026, 11, 10, 9, 0);
+      
+      await withClock(Clock.fixed(beforeCutoff), () async {
+        final inputPermit = createMockPermit(id: '', userId: 'user_123', status: PermitStatus.active);
 
-      final generatedId = await permitService.createPermit(inputPermit);
+        final generatedId = await permitService.createPermit(inputPermit);
 
-      expect(generatedId, isNotEmpty);
+        expect(generatedId, isNotEmpty);
 
-      final docSnap = await db.collection('permits').doc(generatedId).get();
-      final data = docSnap.data()!;
+        final docSnap = await db.collection('permits').doc(generatedId).get();
+        final data = docSnap.data()!;
 
-      expect(data['user_id'], 'user_123');
-      expect(data['permit_status'], PermitStatus.pending.value);
-      expect(data['actual_time_in'], isNull);
-      expect(data['disapproval_reason'], isNull);
-      expect(data['permit_type'], PermitType.late.value);
-      expect(data['approved_by'], isNull);
-      expect(data['approved_at'], isNull);
-      expect(data['created_at'], isNotNull);
-      expect(data['qr_id'], isNull);
+        expect(data['user_id'], 'user_123');
+        expect(data['permit_status'], PermitStatus.pending.value);
+        expect(data['actual_time_in'], isNull);
+        expect(data['disapproval_reason'], isNull);
+        expect(data['permit_type'], PermitType.late.value);
+        expect(data['approved_by'], isNull);
+        expect(data['approved_at'], isNull);
+        expect(data['created_at'], isNotNull);
+        expect(data['qr_id'], isNull);
+        // Verify default late filing fields
+        expect(data['is_late_filing'], isFalse);
+        expect(data['late_filing_reason'], isNull);
+      });
+    });
+  });
+
+  group('PermitService - Late Filing (AS5)', () {
+    final beforeCutoff = DateTime.utc(2026, 11, 10, 9, 59, 59); // 17:59:59 Manila
+    final atCutoff = DateTime.utc(2026, 11, 10, 10, 0, 0);     // 18:00:00 Manila
+    final afterCutoff = DateTime.utc(2026, 11, 10, 11, 0, 0);  // 19:00 Manila
+
+    test('17:59:59 Manila has no flag', () async {
+      await withClock(Clock.fixed(beforeCutoff), () async {
+        final permit = createMockPermit(id: '', userId: 'u1');
+        final id = await permitService.createPermit(permit);
+        
+        final data = (await db.collection('permits').doc(id).get()).data()!;
+        expect(data['is_late_filing'], isFalse);
+        expect(data['late_filing_reason'], isNull);
+      });
+    });
+
+    test('Exactly 18:00:00 Manila is flagged', () async {
+      await withClock(Clock.fixed(atCutoff), () async {
+        final permit = createMockPermit(id: '', userId: 'u1');
+        final id = await permitService.createPermit(permit, lateReason: 'Valid reason');
+        
+        final data = (await db.collection('permits').doc(id).get()).data()!;
+        expect(data['is_late_filing'], isTrue);
+        expect(data['late_filing_reason'], 'Valid reason');
+      });
+    });
+
+    test('After the cutoff with no reason, empty, or whitespace throws ArgumentError and collection stays empty', () async {
+      await withClock(Clock.fixed(afterCutoff), () async {
+        final permit = createMockPermit(id: '', userId: 'u1');
+
+        // No reason
+        expect(
+          () => permitService.createPermit(permit),
+          throwsArgumentError,
+        );
+
+        // Empty string
+        expect(
+          () => permitService.createPermit(permit, lateReason: ''),
+          throwsArgumentError,
+        );
+
+        // Whitespace only
+        expect(
+          () => permitService.createPermit(permit, lateReason: '   '),
+          throwsArgumentError,
+        );
+
+        // Ensure nothing was saved
+        final snapshot = await db.collection('permits').get();
+        expect(snapshot.docs, isEmpty);
+      });
+    });
+
+    test('A valid reason is stored trimmed', () async {
+      await withClock(Clock.fixed(afterCutoff), () async {
+        final permit = createMockPermit(id: '', userId: 'u1');
+        final id = await permitService.createPermit(permit, lateReason: '  Family emergency  ');
+        
+        final data = (await db.collection('permits').doc(id).get()).data()!;
+        expect(data['is_late_filing'], isTrue);
+        expect(data['late_filing_reason'], 'Family emergency');
+      });
+    });
+
+    test('Before the cutoff with a reason supplied stores no reason', () async {
+      await withClock(Clock.fixed(beforeCutoff), () async {
+        final permit = createMockPermit(id: '', userId: 'u1');
+        // Even though a reason is provided, it should be ignored before the cutoff
+        final id = await permitService.createPermit(permit, lateReason: 'Early reason');
+        
+        final data = (await db.collection('permits').doc(id).get()).data()!;
+        expect(data['is_late_filing'], isFalse);
+        expect(data['late_filing_reason'], isNull);
+      });
+    });
+
+    test('A reason over 200 characters is truncated', () async {
+      await withClock(Clock.fixed(afterCutoff), () async {
+        final permit = createMockPermit(id: '', userId: 'u1');
+        final longReason = 'A' * 205; // 205 characters
+        
+        final id = await permitService.createPermit(permit, lateReason: longReason);
+        
+        final data = (await db.collection('permits').doc(id).get()).data()!;
+        expect(data['is_late_filing'], isTrue);
+        expect(data['late_filing_reason'].length, 200);
+        expect(data['late_filing_reason'], 'A' * 200);
+      });
     });
   });
 
@@ -257,7 +367,7 @@ void main() {
     //=== StateError cases ===
     test('throws StateError for a missing permit', () async {
       await expectLater(
-        permitService.cancelPermit(ownerId, 'does_not_exist'),
+        () => permitService.cancelPermit(ownerId, 'does_not_exist'), 
         throwsStateError,
       );
     });
@@ -266,7 +376,7 @@ void main() {
       await seedPermit('p1', status: PermitStatus.pending);
 
       await expectLater(
-        permitService.cancelPermit(otherId, 'p1'),
+        () => permitService.cancelPermit(otherId, 'p1'), 
         throwsStateError,
       );
 
@@ -284,7 +394,7 @@ void main() {
         await seedPermit('p1', status: status);
 
         await expectLater(
-          permitService.cancelPermit(ownerId, 'p1'),
+          () => permitService.cancelPermit(ownerId, 'p1'), 
           throwsStateError,
         );
 
@@ -398,6 +508,7 @@ void main() {
       await expectation;
     });
   });
+  
   group('PermitService - recordTimeIn', () {
     final now = DateTime(2026, 10, 30, 16, 0);
     final timeIn = DateTime(2026, 10, 30, 15, 0);
@@ -409,7 +520,7 @@ void main() {
 
       // run the service with the clock frozen at `now`
       await withClock(Clock.fixed(now), () async {
-        await permitService.recordTimeIn('p1', at: timeIn);
+        await permitService.recordTimeIn('admin_1', 'p1', at: timeIn);
       });
 
       final data = (await db.collection('permits').doc('p1').get()).data()!;
@@ -425,7 +536,7 @@ void main() {
 
       // run the service with the clock frozen at `now`
       await withClock(Clock.fixed(now), () async {
-        await permitService.recordTimeIn('p1');
+        await permitService.recordTimeIn('admin_1', 'p1');
       });
 
       final data = (await db.collection('permits').doc('p1').get()).data()!;
@@ -439,7 +550,7 @@ void main() {
       await db.collection('permits').doc('p1').set(p.toFirestore());
 
       await withClock(Clock.fixed(now), () async {
-        await permitService.recordTimeIn('p1', at: now);
+        await permitService.recordTimeIn('admin_1', 'p1', at: now);
       });
 
       final data = (await db.collection('permits').doc('p1').get()).data()!;
@@ -452,7 +563,7 @@ void main() {
 
       await withClock(Clock.fixed(now), () async {
         await expectLater(
-          () => permitService.recordTimeIn('p1', at: now.add(const Duration(hours: 1))),
+          () => permitService.recordTimeIn('admin_1', 'p1', at: now.add(const Duration(hours: 1))),
           throwsArgumentError,
         );
       });
@@ -465,7 +576,7 @@ void main() {
     test('throws StateError for a missing permit', () async {
       await withClock(Clock.fixed(now), () async {
         await expectLater(
-          permitService.recordTimeIn('does_not_exist'),
+          () => permitService.recordTimeIn('admin_1', 'does_not_exist'),
           throwsStateError,
         );
       });
@@ -478,7 +589,7 @@ void main() {
 
       await withClock(Clock.fixed(now), () async {
         await expectLater(
-          permitService.recordTimeIn('p2'),
+          () => permitService.recordTimeIn('admin_1', 'p2'),
           throwsStateError,
         );
       });
@@ -494,7 +605,7 @@ void main() {
 
       await withClock(Clock.fixed(now), () async {
         await expectLater(
-          permitService.recordTimeIn('p3'),
+          () => permitService.recordTimeIn('admin_1', 'p3'),
           throwsStateError,
         );
       });
