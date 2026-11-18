@@ -50,21 +50,25 @@ class PermitModel {
   });
 
   //--------  helpers  ---------
-  /// returned after the expected time.
-bool get isLate =>
-    actualTimeIn != null && actualTimeIn!.isAfter(expectedTimeIn);
+  /// True when the resident returned after the expected time.
+  /// False if the resident returned on time or hasn't checked back in yet
+  bool get isLate =>
+      actualTimeIn != null && actualTimeIn!.isAfter(expectedTimeIn);
 
-/// ACTIVE, past the expected time, and not yet timed in.
-bool isOverdueAt(DateTime now) =>
-    permitStatus == PermitStatus.active &&
-    actualTimeIn == null &&
-    now.isAfter(expectedTimeIn);
+  /// ACTIVE, past the expected time, and not yet timed in.
+  bool isOverdueAt(DateTime now) =>
+      permitStatus == PermitStatus.active &&
+      actualTimeIn == null &&
+      now.isAfter(expectedTimeIn);
 
-/// PENDING and created before the start of [now]'s day (the 12 AM rule).
-/// Pass [now] in the dorm's time zone
-bool isStalePendingAt(DateTime now) =>
-    permitStatus == PermitStatus.pending &&
-    createdAt.isBefore(DateTime(now.year, now.month, now.day));
+  /// PENDING and created before the start of [now]'s day (the 12 AM rule).
+  /// Pass [now] in the dorm's time zone (UTC+8) to check if the permit is stale (not checked by an admin yet)
+  bool isStalePendingAt(DateTime now) {
+    final startOfDay = now.isUtc
+        ? DateTime.utc(now.year, now.month, now.day)
+        : DateTime(now.year, now.month, now.day);
+    return permitStatus == PermitStatus.pending && createdAt.isBefore(startOfDay);
+  }
 
   // Builds a PermitModel from the Firestore doc at permits/{id}
   factory PermitModel.fromFirestore(
@@ -118,6 +122,9 @@ bool isStalePendingAt(DateTime now) =>
       'approved_at': approvedAt == null ? null : Timestamp.fromDate(approvedAt!),
       'qr_id': qrId,
       'created_at': Timestamp.fromDate(createdAt),
+      'floor': floor,
+      'is_late_filing': isLateFiling,
+      'late_filing_reason': lateFilingReason,
     };
   }
 
