@@ -27,6 +27,7 @@ class _SearchFieldState extends State<SearchField> {
         onSubmitted: widget.onSubmitted,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
+          fillColor: Colors.white,
           hintText: widget.hint,
           suffixIcon: IconButton(
             tooltip: 'Search',
