@@ -48,7 +48,8 @@ class PermitModel {
   });
 
   //--------  helpers  ---------
-  /// returned after the expected time.
+  /// True when the resident returned after the expected time.
+  /// False if the resident returned on time or hasn't checked back in yet
   bool get isLate =>
       actualTimeIn != null && actualTimeIn!.isAfter(expectedTimeIn);
 
@@ -58,6 +59,15 @@ class PermitModel {
       actualTimeIn == null &&
       now.isAfter(expectedTimeIn);
 
+  /// PENDING and created before the start of [now]'s day (the 12 AM rule).
+  /// Pass [now] in the dorm's time zone (UTC+8) to check if the permit is stale (not checked by an admin yet)
+  bool isStalePendingAt(DateTime now) {
+    final startOfDay = now.isUtc
+        ? DateTime.utc(now.year, now.month, now.day)
+        : DateTime(now.year, now.month, now.day);
+    return permitStatus == PermitStatus.pending && createdAt.isBefore(startOfDay);
+  }
+  
   String get lateFilingReasonOrDefault {
     final r = lateFilingReason?.trim();
     return (r == null || r.isEmpty) ? 'No reason given' : r;
@@ -71,13 +81,7 @@ class PermitModel {
   }
 
   String get filedAtFormatted => _formatTime(createdAt);
-
-  /// PENDING and created before the start of [now]'s day (the 12 AM rule).
-  /// Pass [now] in the dorm's time zone
-  bool isStalePendingAt(DateTime now) =>
-      permitStatus == PermitStatus.pending &&
-      createdAt.isBefore(DateTime(now.year, now.month, now.day));
-
+  
   // Builds a PermitModel from the Firestore doc at permits/{id}
   factory PermitModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> snapshot,
