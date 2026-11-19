@@ -1,14 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:permission_app/models/data_enums.dart';
 
-/// Values eyeballed from the Figma frames. Replace with exact hex codes.
 class AppColors {
   static const brandPink = Color(0xFFFBB4C0); // header and bottom bar
   static const action = Color(0xFF5E57B5);    // main buttons, "+" button
   static const flow = Color(0xFFA83D66);      // filing wizard
   static const heading = Color(0xFF7A1F3D);   // section headings
-  static const cardBg = Color.fromARGB(255, 252, 244, 248);
-  static const fieldBg = Color(0xFFFFF5F7);
+  static const pageBg = Color.fromARGB(97, 247, 230, 233);    // page background, behind the cards
+  static const cardBg = Color.fromRGBO(255, 255, 255, 1);
+  static const fieldBg = Color.fromARGB(255, 253, 234, 238);
   static const ink = Color(0xFF1B1B1F);
 }
 
@@ -34,7 +34,7 @@ class StatusColors {
         PermitStatus.pending => const StatusColors(Color(0xFFF5A623), Color(0xFF1B1B1F)),
         PermitStatus.active => const StatusColors(Color(0xFF2E7D32), Colors.white),
         PermitStatus.completed => const StatusColors(Color(0xFF2F4FA8), Colors.white),
-        PermitStatus.denied => const StatusColors(Color(0xFFB0102A), Colors.white),
+        PermitStatus.denied => const StatusColors(Color(0xFFFDECEE), Color(0xFFB00020)),
         PermitStatus.cancelled => const StatusColors(Color(0xFF6B6B6B), Colors.white),
         PermitStatus.overdue => const StatusColors(Color(0xFFC03A00), Colors.white),
       };
@@ -44,7 +44,7 @@ class AppTheme {
   static const sectionHeading = TextStyle(
       fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.heading);
 
-  /// Raspberry button used inside the "File a New Permit" flow (Next, Confirm).
+  ///button used inside the "File a New Permit" flow (Next, Confirm).
   static final ButtonStyle flowButton = ElevatedButton.styleFrom(
     backgroundColor: AppColors.flow,
     foregroundColor: Colors.white,
@@ -65,7 +65,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: Colors.white,
+      scaffoldBackgroundColor: AppColors.pageBg,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.brandPink,
         foregroundColor: AppColors.ink,
