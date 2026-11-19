@@ -1,8 +1,8 @@
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import '../authentication/data/auth_repository.dart';
 
-
-// Placeholder homepage for end_user accounts
+// Homepage for admin accounts
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
 
@@ -10,16 +10,35 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: const Text('Admin Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => AuthRepository().signOut(),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await AuthRepository().signOut();
+            },
           ),
         ],
       ),
-      body: const Center(child: Text('Admin Home')),
-
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              key: const Key('open-permit-history'),
+              leading: const Icon(Icons.history),
+              title: const Text('Permit history'),
+              subtitle: const Text('See every permit residents have filed'),
+              trailing: const Icon(Icons.chevron_right),
+              // push (not go) keeps the dashboard underneath, so the
+              // history screen gets a back arrow
+              onTap: () => context.push('/admin/permit-history'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
