@@ -1,5 +1,4 @@
 import 'package:firebase_core/firebase_core.dart';
-//import 'package:flutter/material.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_app/features/presentation/auth_notifier.dart';
@@ -9,11 +8,14 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // One notifier, it listens to the auth stream and feeds the router
-  final auth = AuthNotifier(AuthRepository());
-  final router = createRouter(auth);
+  final authRepository = AuthRepository();
+  final auth = AuthNotifier(authRepository);
+  final router = createRouter(auth, authRepository);
+
 
   runApp(MyApp(router: router));
 }

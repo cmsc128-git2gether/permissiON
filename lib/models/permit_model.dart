@@ -21,6 +21,10 @@ class PermitModel {
   final DateTime? approvedAt;
   final String? qrId;                 // FK -> qr/{qr_id}; null on default
   final DateTime createdAt;
+  final int? floor;                // null on permits   filed before this field existed
+  final bool isLateFiling;         // filed after the 6 PM cutoff
+  final String? lateFilingReason;  // required when isLateFiling
+
 
   PermitModel({
     required this.id,
@@ -40,7 +44,27 @@ class PermitModel {
     this.approvedAt,
     this.qrId,
     required this.createdAt,
+    this.floor,
+    this.isLateFiling = false,
+    this.lateFilingReason,
   });
+
+  //--------  helpers  ---------
+  /// returned after the expected time.
+bool get isLate =>
+    actualTimeIn != null && actualTimeIn!.isAfter(expectedTimeIn);
+
+/// ACTIVE, past the expected time, and not yet timed in.
+bool isOverdueAt(DateTime now) =>
+    permitStatus == PermitStatus.active &&
+    actualTimeIn == null &&
+    now.isAfter(expectedTimeIn);
+
+/// PENDING and created before the start of [now]'s day (the 12 AM rule).
+/// Pass [now] in the dorm's time zone
+bool isStalePendingAt(DateTime now) =>
+    permitStatus == PermitStatus.pending &&
+    createdAt.isBefore(DateTime(now.year, now.month, now.day));
 
   // Builds a PermitModel from the Firestore doc at permits/{id}
   factory PermitModel.fromFirestore(
@@ -68,6 +92,9 @@ class PermitModel {
       approvedAt: (data['approved_at'] as Timestamp?)?.toDate(),
       qrId: data['qr_id'],
       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      floor: data['floor'] as int?,
+      isLateFiling: data['is_late_filing'] ?? false,
+      lateFilingReason: data['late_filing_reason'],
     );
   }
 

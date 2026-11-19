@@ -1,5 +1,4 @@
 // Package imports
-//import 'package:flutter/material.dart'; updated to material_ui, due to change in Flutter
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,6 +10,7 @@ import '../features/presentation/dormer_dashboard.dart';
 import '../features/presentation/login_screen.dart';
 import '../features/presentation/admin_permit_history_screen.dart';
 
+import '../features/authentication/data/auth_repository.dart';
 
 // Decides where a user should be, given auth status and current location.
 // Kept as a pure function so it can be unit tested without Firebase.
@@ -39,15 +39,22 @@ String? redirectFor(AuthStatus status, String location) {
 }
 
 // Sets up the app's pages and decides who can see which page
-GoRouter createRouter(AuthNotifier auth) {
+GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: auth,
     redirect: (context, state) =>
         redirectFor(auth.status, state.matchedLocation),
     routes: [
-      GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) =>
+            LoginScreen(authRepository: authRepository),
+      ),
       GoRoute(
         path: '/home',
         builder: (context, state) => const StudentHomeScreen(),
@@ -73,6 +80,7 @@ class SplashScreen extends StatelessWidget {
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
+
 //Preview of the Splash Screen
 @Preview(name: 'Splash Screen Preview')
 Widget splashScreenPreview() {
