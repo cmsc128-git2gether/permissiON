@@ -8,6 +8,8 @@ import 'package:flutter/widget_previews.dart';
 import '../features/presentation/admin_dashboard.dart';
 import '../features/presentation/dormer_dashboard.dart';
 import '../features/presentation/login_screen.dart';
+import '../features/presentation/admin_permit_history_screen.dart';
+
 import '../features/authentication/data/auth_repository.dart';
 
 // Decides where a user should be, given auth status and current location.
@@ -61,6 +63,10 @@ GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
         path: '/admin',
         builder: (context, state) => const AdminDashboardScreen(),
       ),
+      GoRoute(
+        path: '/admin/permit-history',
+        builder: (context, state) => const AdminPermitHistoryScreen(),
+      ), 
     ],
   );
 }
