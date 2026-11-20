@@ -1,5 +1,4 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart' as m;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:permission_app/features/presentation/auth_notifier.dart';
@@ -30,13 +29,13 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: router,
-      builder: (context, child) => m.Theme(
-        data: m.ThemeData.light(),
-        child: m.Localizations(
+      builder: (context, child) => Theme(
+        data: ThemeData.light(),
+        child: Localizations(
           locale: const Locale('en', 'US'),
           delegates: const [
-            m.DefaultMaterialLocalizations.delegate,
-            m.DefaultWidgetsLocalizations.delegate,
+            DefaultMaterialLocalizations.delegate,
+            DefaultWidgetsLocalizations.delegate,
           ],
           child: child ?? const SizedBox.shrink(),
         ),
