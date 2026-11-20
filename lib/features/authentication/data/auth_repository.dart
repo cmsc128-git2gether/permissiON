@@ -35,7 +35,57 @@ class AuthRepository {
     } on FirebaseAuthException catch (e) {
       throw AuthFailure(e.code, friendlyAuthError(e));
     } on FirebaseException catch (e) {
-      throw AuthFailure(e.code, friendlyAuthError(e));
+      // Fallback for other Firebase errors such as network or backend issues
+      // Show a generic message while original code is kept for debugging, so
+      // internal details are not exposed to the user
+      throw FirebaseAuthException(
+        code: e.code,
+        message: 'Authentication failed. Please try again.',
+      );
+    }
+  }
+
+  /// Registers a new user and creates their matching Firestore profile.
+  ///
+  /// 2 Step process
+  ///   1. Create the account in Firebase Authentication.
+  ///   2. Save the user's profile document in the `users` collection.
+  ///
+  /// If step 2 fails, the Auth account is deleted so the user is never
+  /// left with an account that has no profile.
+  Future<void> signUp({required String email, required String password}) async {
+    // Normalize the email so the same address is always stored the same way.
+    final normalized = email.trim().toLowerCase();
+    User? user;
+    // create the Firebase Auth account
+    try {
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: normalized,
+        password: password,
+      );
+      user = cred.user!; //non-null after a successful sign-up
+    } on FirebaseAuthException catch (e) {
+      // Map known Auth errors
+      throw _mapError(e);
+    } on FirebaseException catch (e) {
+      // Generic fallback for any other Firebase failure.
+      throw FirebaseAuthException(
+        code: e.code,
+        message: 'Authentication failed. Please try again.',
+      );
+    }
+    // Create the user's profile document, keyed by their Auth ID.
+    try {
+      await _firestore.collection('users').doc(user.uid).set({
+        'email': normalized,
+        'access_level': 'end_user', // default role
+        'created_at':
+            FieldValue.serverTimestamp(), // Server-side time avoids client clock issues.
+      });
+    } catch (_) {
+      //Roll back, so the email is not stranded in an unusable state.
+      await user.delete();
+      rethrow; // Let the caller know sign-up failed.
     }
   }
 

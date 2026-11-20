@@ -5,13 +5,6 @@ import 'package:permission_app/theme/app_theme.dart';
 import 'package:permission_app/utils/format.dart';
 import 'package:permission_app/models/permit_model.dart';
 
-//get the last 4 digits of the permit ID for display, or "----" if the ID is empty
-extension PermitDisplay on PermitModel {
-  String get displayNumber {
-    if (id.isEmpty) return '----';
-    return id.length <= 4 ? id : id.substring(id.length - 4);
-  }
-}
 
 //card that shows the details of a permit, with optional student info and action button
 class PermitCard extends StatefulWidget {

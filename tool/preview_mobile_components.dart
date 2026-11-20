@@ -9,7 +9,8 @@ import 'package:permission_app/theme/app_theme.dart';
 PermitModel sample(PermitStatus s, {bool late = false}) => PermitModel(
       id: '0680',
       userId: 'u1',
-      fullName: 'Name 123',
+      surname: 'Dela Cruz',
+      givenName: 'Juan',
       roomNum: '20',
       permitType: PermitType.overnight,
       destination: 'Puesto',
