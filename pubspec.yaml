@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   # material_ui: ^1.11.0
-    
+
   # Dependency for injected clock
   clock: ^1.1.1
 
@@ -44,7 +44,6 @@ dependencies:
   go_router: ^18.1.1
   material_ui: ^1.11.0
   intl: ^0.20.3
-
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +67,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
