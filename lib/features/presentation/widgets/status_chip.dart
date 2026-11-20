@@ -1,25 +1,32 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:permission_app/models/data_enums.dart';
+import 'package:permission_app/theme/app_theme.dart';
 
 class StatusChip extends StatelessWidget {
-  const StatusChip(this.status, {super.key});
-  final PermitStatus status;
+  const StatusChip(this.status, {super.key, this.expanded = false, this.solid = false});
 
-  Color get _color => switch (status) {
-        PermitStatus.pending => Colors.orange,
-        PermitStatus.active => Colors.green,
-        PermitStatus.denied => Colors.red,
-        PermitStatus.completed => Colors.blueGrey,
-        PermitStatus.cancelled => Colors.grey,
-        PermitStatus.overdue => Colors.deepOrange,
-      };
+  final PermitStatus status;
+  final bool expanded; // full-width banner, as on student cards
+  final bool solid;    // strong pill, as in admin tables
 
   @override
-  Widget build(BuildContext context) => Chip(
-        label: Text(status.value),
-        backgroundColor: _color.withValues(alpha: 0.15),
-        side: BorderSide(color: _color),
-      );
+  Widget build(BuildContext context) {
+    final c = solid ? StatusColors.solid(status) : StatusColors.of(status);
+    return Container(
+      width: expanded ? double.infinity : null,
+      alignment: expanded ? Alignment.center : null,
+      padding: EdgeInsets.symmetric(horizontal: solid ? 14 : 12, vertical: solid ? 3 : 2),
+      decoration: BoxDecoration(
+        color: c.bg,
+        borderRadius: BorderRadius.circular(solid ? 999 : 4),
+      ),
+      child: Text(
+        status.value,
+        style: TextStyle(
+            color: c.fg, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+      ),
+    );
+  }
 }
 
 ///shows "Returned Late" when time in is after expected time in
