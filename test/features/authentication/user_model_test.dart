@@ -20,11 +20,30 @@ void main() {
       expect(user.isAdmin, isFalse);
     });
 
-    test('defaults access_level to end_user if field is missing or null', () {
-      final user = AppUser.fromFirestore(null, 'uid_789', 'user@test.com');
+    // A missing or bad role must never silently become end_user.
+    // AuthRepository catches this error and emits AuthState.notSetUp.
+    test('throws when access_level is missing or null', () {
+      expect(
+        () => AppUser.fromFirestore(null, 'uid_789', 'user@test.com'),
+        throwsArgumentError,
+      );
+      expect(
+        () => AppUser.fromFirestore({}, 'uid_789', 'user@test.com'),
+        throwsArgumentError,
+      );
+      expect(
+        () => AppUser.fromFirestore(
+            {'access_level': null}, 'uid_789', 'user@test.com'),
+        throwsArgumentError,
+      );
+    });
 
-      expect(user.accessLevel, 'end_user');
-      expect(user.isAdmin, isFalse);
+    test('throws when access_level is not a known role', () {
+      expect(
+        () => AppUser.fromFirestore(
+            {'access_level': 'superuser'}, 'uid_789', 'user@test.com'),
+        throwsArgumentError,
+      );
     });
   });
 }
