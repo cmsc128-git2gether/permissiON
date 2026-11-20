@@ -11,7 +11,7 @@ class AppRoutes {
   static const newPermit = '/permits/new';
 }
 
-/// Branch order must match the order of `BottomTab.values`.
+
 GoRouter createRouter({
   String initialLocation = AppRoutes.home,
   WidgetBuilder? newPermitBuilder,
@@ -22,33 +22,37 @@ GoRouter createRouter({
     navigatorKey: rootKey,
     initialLocation: initialLocation,
     routes: [
+      /// order must match the order of `BottomTab.values`.
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(navigationShell: shell),
+        // for now, use placeholder screens for the tabs, since the real screens are not implemented yet
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.home,
               builder: (_, _) =>
-                  const PlaceholderScreen(key: Key('home-screen'), title: 'Home', showAppBar: false)
+                  const PlaceholderScreen(key: Key('home-screen'), title: 'Home', showAppBar: true)
             ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.permits,
               builder: (_, _) =>
-                  const PlaceholderScreen(key: Key('permits-screen'), title: 'My Permits', showAppBar: false)
+                  const PlaceholderScreen(key: Key('permits-screen'), title: 'My Permits', showAppBar: true)
             ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.notifications,
-              builder: (_, _) => const PlaceholderScreen(title: 'Notifications'),
+              builder: (_, _) => const PlaceholderScreen(
+                key: Key('notifications-screen'), title: 'Notifications', showAppBar: true),
             ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.profile,
-              builder: (_, _) => const PlaceholderScreen(title: 'Profile'),
+              builder: (_, _) => const PlaceholderScreen(
+                key: Key('profile-screen'), title: 'Profile', showAppBar: true),
             ),
           ]),
         ],
@@ -59,7 +63,7 @@ GoRouter createRouter({
         builder: (context, _) =>
             newPermitBuilder?.call(context) ??
             const PlaceholderScreen(
-                key: Key('new-permit-screen'), title: 'New permit request'),
+                key: Key('new-permit-screen'), title: 'New permit request', showAppBar: false),
       ),
     ],
   );

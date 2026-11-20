@@ -14,8 +14,9 @@ class PlaceholderScreen extends StatelessWidget {
     final body = Center(
       child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
     );
-    if (!showAppBar) 
-      return body; //if no app bar, just return the body
+    if (showAppBar){
+      return body;
+     } //if no app bar, just return the body
     return Scaffold(appBar: AppBar(title: Text(title)), body: body);
   }
 }
