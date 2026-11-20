@@ -11,7 +11,7 @@
 // UserModel (the `users` collection), not here. Both share the same
 // document ID (user_id).
 
-import 'dart:ffi';
+//import 'dart:ffi';
 
 /// An immutable model of an end user's profile.
 ///
