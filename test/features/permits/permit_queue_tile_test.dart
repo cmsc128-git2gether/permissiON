@@ -7,7 +7,8 @@ import 'package:permission_app/models/permit_model.dart';
 PermitModel _permit({bool late = false, String? reason}) => PermitModel(
   id: 'p1',
   userId: 'u1',
-  fullName: 'De Guzman, Mikaela',
+  surname: 'De Guzman',
+  givenName: 'Mikaela',
   roomNum: '13',
   permitType: PermitType.late,
   destination: 'SM City',

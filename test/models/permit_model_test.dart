@@ -27,7 +27,8 @@ PermitModel buildPermit({
   return PermitModel(
     id: 'p1',
     userId: 'u1',
-    fullName: 'Juan Dela Cruz',
+    surname: 'Dela Cruz',
+    givenName: 'Juan',
     roomNum: '204',
     permitType: PermitType.late,
     destination: 'Beans and Bubbles',
@@ -92,7 +93,10 @@ void main() {
       final loaded = (await col.doc('p1').get()).data()!;
       expect(loaded.id, 'p1');
       expect(loaded.userId, 'u1');
-      expect(loaded.fullName, 'Juan Dela Cruz');
+      expect(loaded.surname, 'Dela Cruz');
+      expect(loaded.givenName, 'Juan');
+      expect(loaded.fullName, 'Dela Cruz, Juan');
+      expect(loaded.displayName, 'Juan Dela Cruz');
       expect(loaded.roomNum, '204');
       expect(loaded.permitType, PermitType.late);
       expect(loaded.expectedTimeIn.toUtc(), original.expectedTimeIn);

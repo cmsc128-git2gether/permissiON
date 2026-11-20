@@ -19,7 +19,8 @@ void main() {
     return PermitModel.collectionOf(db).doc('p1').set(PermitModel(
           id: 'p1',
           userId: 'u1',
-          fullName: 'Juan Dela Cruz',
+          surname: 'Dela Cruz',
+          givenName: 'Juan',
           roomNum: '204',
           permitType: PermitType.late,
           destination: 'Iloilo City',
