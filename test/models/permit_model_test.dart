@@ -27,7 +27,8 @@ PermitModel buildPermit({
   return PermitModel(
     id: 'p1',
     userId: 'u1',
-    fullName: 'Juan Dela Cruz',
+    surname: 'Dela Cruz',
+    givenName: 'Juan',
     roomNum: '204',
     permitType: PermitType.late,
     destination: 'Beans and Bubbles',
