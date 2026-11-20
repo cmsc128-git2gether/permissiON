@@ -4,7 +4,8 @@ import 'package:permission_app/models/data_enums.dart';
 import 'package:permission_app/services/permit_service.dart';
 import 'package:permission_app/features/presentation/widgets/status_chip.dart';
 import 'package:permission_app/features/presentation/widgets/late_filing_indicator.dart';
-import 'package:permission_app/utils/format.dart';
+import 'package:intl/intl.dart';
+
 class PermitDetailScreen extends StatelessWidget {
   const PermitDetailScreen({
     super.key,
@@ -63,7 +64,7 @@ class PermitDetailScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 LateFilingIndicator(
                   isLateFiling: p.isLateFiling,
-                  time: formatDateTime(p.createdAt),
+                  time: DateFormat('h:mm a').format(p.createdAt).toLowerCase(),
                   lateFilingReasonText: p.lateFilingReasonOrDefault,
                 ),
               ],

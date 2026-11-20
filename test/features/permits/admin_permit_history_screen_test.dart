@@ -17,8 +17,8 @@ PermitModel createSamplePermit({
   return PermitModel(
     id: id,
     userId: 'test_user_001',
-    surname: 'Dela Cruz',
-    givenName: 'Juan',
+    surname: name,
+    givenName: '',
     roomNum: '101',
     permitType: PermitType.late,
     destination: 'Beans and Bubbles',
