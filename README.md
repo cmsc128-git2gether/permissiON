@@ -80,10 +80,10 @@ users/{user_id}
 	deleted_at: TIMESTAMP | NULL
 
 admin_profiles/{user_id}
-	name, display_photo
+	surname, given_name
 
 end_user_profiles/{user_id}
-	surname, given_name, display_photo, phone_num, room_num
+	surname, given_name, phone_num, room_num, floor
 	active_permits, permit_history, delinquency_count (QUERIES ONLY)
 
 permits/{permit_id}
