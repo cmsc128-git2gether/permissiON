@@ -11,6 +11,8 @@
 // UserModel (the `users` collection), not here. Both share the same
 // document ID (user_id).
 
+import 'dart:ffi';
+
 /// An immutable model of an end user's profile.
 ///
 /// Holds the resident's name, an optional display photo, and their contact
@@ -24,12 +26,14 @@ class EndUserProfileModel {
   final String surname;
   /// The user's first/given name.
   final String givenName;
-  /// URL or path of the user's display photo. Null if none is set.
-  final String? displayPhoto;
+  // /// URL or path of the user's display photo. Null if none is set.
+  // final String? displayPhoto;
   /// The user's contact phone number. Empty string if none is stored.
   final String phoneNum;
   /// The user's assigned room number. Empty string if none is stored.
   final String roomNum;
+  // User's assigned floor
+  final int floor;
 
   // No delinquency_count, permit_history, or active_permits:
   // those are queried from the delinquency logs and permits collections.
@@ -47,9 +51,9 @@ class EndUserProfileModel {
     required this.userId,
     required this.surname,
     required this.givenName,
-    this.displayPhoto,
     required this.phoneNum,
     required this.roomNum,
+    required this.floor,
   });
 
   /// Builds an [EndUserProfileModel] from a Firestore document map.
@@ -57,15 +61,15 @@ class EndUserProfileModel {
   /// The [id] is passed separately because it lives outside the document
   /// data. Missing or null fields fall back to safe defaults: empty strings
   /// for names, phone number, and room number, and `null` for the photo.
-  factory EndUserProfileModel.fromJson(Map<String, dynamic> json,
-          {required String id}) =>
+  factory EndUserProfileModel.fromFirestore(Map<String, dynamic> json,
+          {required String id,}) =>
       EndUserProfileModel(
         userId: id,
         surname: json['surname'] as String? ?? '',
         givenName: json['given_name'] as String? ?? '',
-        displayPhoto: json['display_photo'] as String?,
         phoneNum: json['phone_num'] as String? ?? '',
         roomNum: json['room_num'] as String? ?? '',
+        floor: (json['floor'] as num?)?.toInt() ?? 1,
       );
 
   /// Converts this model into a map for saving to Firestore.
@@ -75,8 +79,8 @@ class EndUserProfileModel {
   Map<String, dynamic> toJson() => {
         'surname': surname,
         'given_name': givenName,
-        'display_photo': displayPhoto,
         'phone_num': phoneNum,
         'room_num': roomNum,
+        'floor': floor,
       };
 }

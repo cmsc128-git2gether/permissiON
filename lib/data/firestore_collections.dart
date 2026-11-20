@@ -58,7 +58,7 @@ class Collections {
   static final CollectionReference<EndUserProfileModel> endUserProfiles =
       _db.collection('end_user_profiles').withConverter<EndUserProfileModel>(
             fromFirestore: (snap, _) =>
-                EndUserProfileModel.fromJson(snap.data() ?? {}, id: snap.id),
+                EndUserProfileModel.fromFirestore(snap.data() ?? {}, id: snap.id),
             toFirestore: (model, _) => model.toJson(),
           );
 }
