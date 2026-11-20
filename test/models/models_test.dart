@@ -17,13 +17,13 @@ void main() {
   });
 
   test('EndUserProfileModel handles missing fields', () {
-    final model = EndUserProfileModel.fromJson({}, id: 'x');
+    final model = EndUserProfileModel.fromFirestore({}, id: 'x');
     expect(model.surname, '');
     expect(model.roomNum, '');
   });
 
   test('EndUserProfileModel has no dynamic fields', () {
-    final json = EndUserProfileModel.fromJson({}, id: 'x').toJson();
+    final json = EndUserProfileModel.fromFirestore({}, id: 'x').toJson();
     expect(json.containsKey('active_permits'), false);
     expect(json.containsKey('permit_history'), false);
     expect(json.containsKey('delinquency_count'), false);
