@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_app/features/presentation/auth_notifier.dart';
+import 'package:permission_app/theme/app_theme.dart';
 import 'app/router.dart';
 import 'features/authentication/data/auth_repository.dart'; // adjust path
 import 'firebase_options.dart';
@@ -28,6 +29,6 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(routerConfig: router);
+    return MaterialApp.router(theme: AppTheme.light(), routerConfig: router);
   }
 }

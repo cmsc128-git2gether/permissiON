@@ -1,12 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_app/models/data_enums.dart';
 
-
 // Model for a permit, stored at permits/{permit_id}
 class PermitModel {
-  final String id;                    // Firestore doc ID (permit_id)
-  final String userId;                // FK -> users/{user_id} (the end user who filed it)
-  final String fullName;              // Copied from end_user_profiles at filing time
+  final String id; // Firestore doc ID (permit_id)
+  final String userId; // FK -> users/{user_id} (the end user who filed it)
+  final String fullName; // Copied from end_user_profiles at filing time
   final String roomNum;
   final PermitType permitType;
   final String destination;
@@ -14,17 +13,16 @@ class PermitModel {
   final String emergencyContactPerson;
   final String emergencyContactNum;
   final DateTime expectedTimeIn;
-  final DateTime? actualTimeIn;       // Set from qr.scanned_at; null on default
-  final PermitStatus permitStatus;    // Defaults to PermitStatus.pending
-  final String? disapprovalReason;     // Set when denied
-  final String? approvedBy;           // FK -> users/{admin_id}; null until acted on
+  final DateTime? actualTimeIn; // Set from qr.scanned_at; null on default
+  final PermitStatus permitStatus; // Defaults to PermitStatus.pending
+  final String? disapprovalReason; // Set when denied
+  final String? approvedBy; // FK -> users/{admin_id}; null until acted on
   final DateTime? approvedAt;
-  final String? qrId;                 // FK -> qr/{qr_id}; null on default
+  final String? qrId; // FK -> qr/{qr_id}; null on default
   final DateTime createdAt;
-  final int? floor;                // null on permits   filed before this field existed
-  final bool isLateFiling;         // filed after the 6 PM cutoff
-  final String? lateFilingReason;  // required when isLateFiling
-
+  final int? floor; // null on permits   filed before this field existed
+  final bool isLateFiling; // filed after the 6 PM cutoff
+  final String? lateFilingReason; // required when isLateFiling
 
   PermitModel({
     required this.id,
@@ -50,22 +48,40 @@ class PermitModel {
   });
 
   //--------  helpers  ---------
-  /// returned after the expected time.
-bool get isLate =>
-    actualTimeIn != null && actualTimeIn!.isAfter(expectedTimeIn);
+  /// True when the resident returned after the expected time.
+  /// False if the resident returned on time or hasn't checked back in yet
+  bool get isLate =>
+      actualTimeIn != null && actualTimeIn!.isAfter(expectedTimeIn);
 
-/// ACTIVE, past the expected time, and not yet timed in.
-bool isOverdueAt(DateTime now) =>
-    permitStatus == PermitStatus.active &&
-    actualTimeIn == null &&
-    now.isAfter(expectedTimeIn);
+  /// ACTIVE, past the expected time, and not yet timed in.
+  bool isOverdueAt(DateTime now) =>
+      permitStatus == PermitStatus.active &&
+      actualTimeIn == null &&
+      now.isAfter(expectedTimeIn);
 
-/// PENDING and created before the start of [now]'s day (the 12 AM rule).
-/// Pass [now] in the dorm's time zone
-bool isStalePendingAt(DateTime now) =>
-    permitStatus == PermitStatus.pending &&
-    createdAt.isBefore(DateTime(now.year, now.month, now.day));
+  /// PENDING and created before the start of [now]'s day (the 12 AM rule).
+  /// Pass [now] in the dorm's time zone (UTC+8) to check if the permit is stale (not checked by an admin yet)
+  bool isStalePendingAt(DateTime now) {
+    final startOfDay = now.isUtc
+        ? DateTime.utc(now.year, now.month, now.day)
+        : DateTime(now.year, now.month, now.day);
+    return permitStatus == PermitStatus.pending && createdAt.isBefore(startOfDay);
+  }
+  
+  String get lateFilingReasonOrDefault {
+    final r = lateFilingReason?.trim();
+    return (r == null || r.isEmpty) ? 'No reason given' : r;
+  }
 
+  String _formatTime(DateTime t) {
+    final hour = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    final minute = t.minute.toString().padLeft(2, '0');
+    final suffix = t.hour >= 12 ? 'pm' : 'am';
+    return '$hour:$minute $suffix';
+  }
+
+  String get filedAtFormatted => _formatTime(createdAt);
+  
   // Builds a PermitModel from the Firestore doc at permits/{id}
   factory PermitModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> snapshot,
@@ -77,8 +93,9 @@ bool isStalePendingAt(DateTime now) =>
       userId: data['user_id'] ?? '',
       fullName: data['full_name'] ?? '',
       roomNum: data['room_num'] ?? '',
-      permitType:
-          PermitType.fromString(data['permit_type'] ?? PermitType.late.value),
+      permitType: PermitType.fromString(
+        data['permit_type'] ?? PermitType.late.value,
+      ),
       destination: data['destination'] ?? '',
       purpose: data['purpose'] ?? '',
       emergencyContactPerson: data['emergency_contact_person'] ?? '',
@@ -86,7 +103,8 @@ bool isStalePendingAt(DateTime now) =>
       expectedTimeIn: (data['expected_time_in'] as Timestamp).toDate(),
       actualTimeIn: (data['actual_time_in'] as Timestamp?)?.toDate(),
       permitStatus: PermitStatus.fromString(
-          data['permit_status'] ?? PermitStatus.pending.value),
+        data['permit_status'] ?? PermitStatus.pending.value,
+      ),
       disapprovalReason: data['disapproval_reason'],
       approvedBy: data['approved_by'],
       approvedAt: (data['approved_at'] as Timestamp?)?.toDate(),
@@ -110,12 +128,15 @@ bool isStalePendingAt(DateTime now) =>
       'emergency_contact_person': emergencyContactPerson,
       'emergency_contact_num': emergencyContactNum,
       'expected_time_in': Timestamp.fromDate(expectedTimeIn),
-      'actual_time_in':
-          actualTimeIn == null ? null : Timestamp.fromDate(actualTimeIn!),
+      'actual_time_in': actualTimeIn == null
+          ? null
+          : Timestamp.fromDate(actualTimeIn!),
       'permit_status': permitStatus.value,
       'disapproval_reason': disapprovalReason,
       'approved_by': approvedBy,
-      'approved_at': approvedAt == null ? null : Timestamp.fromDate(approvedAt!),
+      'approved_at': approvedAt == null
+          ? null
+          : Timestamp.fromDate(approvedAt!),
       'qr_id': qrId,
       'created_at': Timestamp.fromDate(createdAt),
       'floor': floor,
@@ -126,7 +147,9 @@ bool isStalePendingAt(DateTime now) =>
 
   // Typed reference to permits/{permit_id}
   static CollectionReference<PermitModel> collectionOf(FirebaseFirestore db) =>
-      db.collection('permits').withConverter<PermitModel>(
+      db
+          .collection('permits')
+          .withConverter<PermitModel>(
             fromFirestore: PermitModel.fromFirestore,
             toFirestore: (permit, _) => permit.toFirestore(),
           );

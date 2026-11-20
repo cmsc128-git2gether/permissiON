@@ -249,8 +249,15 @@ class PermitService {
 
   /// Admin master list, newest first. All permits when [filter] is null.
   /// Implemented in issue #42 (filters in the filter issue).
-  Stream<List<PermitModel>> listenToAllPermits({PermitFilter? filter}) =>
-      Stream.value(const []);
+  Stream<List<PermitModel>> listenToAllPermits({PermitFilter? filter, int limit = 200}) {
+    // issue #79: apply filter (status, type, date created, etc.)
+    var query = _permits
+        .orderBy('created_at', descending: true)
+        .limit(limit);
+
+    return query.snapshots().map((snap) =>
+      snap.docs.map((d) => PermitModel.fromFirestore(d, null)).toList());
+  }
 
   /// Admin review queue: PENDING only, oldest first. Issue #43.
   Stream<List<PermitModel>> listenToPendingPermits({int? limit}) {
