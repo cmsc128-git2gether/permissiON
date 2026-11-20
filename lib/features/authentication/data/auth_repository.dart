@@ -8,8 +8,8 @@ import '../domain/user_model.dart';
 class AuthRepository {
   //Constructor declaration
   AuthRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
-      : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
   //Instance variable declarations
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
@@ -77,7 +77,8 @@ class AuthRepository {
       await _firestore.collection('users').doc(user.uid).set({
         'email': normalized,
         'access_level': 'end_user', // default role
-        'created_at': FieldValue.serverTimestamp(),  // Server-side time avoids client clock issues.
+        'created_at':
+            FieldValue.serverTimestamp(), // Server-side time avoids client clock issues.
       });
     } catch (_) {
       //Roll back, so the email is not stranded in an unusable state.
@@ -106,8 +107,10 @@ class AuthRepository {
     }
 
     try {
-      final callerDoc =
-      await _firestore.collection('users').doc(caller.uid).get();
+      final callerDoc = await _firestore
+          .collection('users')
+          .doc(caller.uid)
+          .get();
       if (callerDoc.data()?['access_level'] != 'admin') {
         throw FirebaseAuthException(
           code: 'permission-denied',
@@ -171,6 +174,7 @@ class AuthRepository {
       await secondaryApp.delete();
     }
   }
+
   /// Signs the current user out of Firebase Authentication.
   Future<void> signOut() => _auth.signOut();
 
@@ -207,6 +211,7 @@ class AuthRepository {
       }
     });
   }
+
   /// Converts a raw [FirebaseAuthException] into one with a user-friendly message.
   ///
   /// The original error code is preserved so callers can still branch on it
@@ -219,8 +224,7 @@ class AuthRepository {
     final message = switch (e.code) {
       'invalid-credential' ||
       'wrong-password' ||
-      'user-not-found' =>
-      'Incorrect email or password.',
+      'user-not-found' => 'Incorrect email or password.',
       //sign-up errors
       'email-already-in-use' => 'That email is already registered.',
       'weak-password' => 'Password is too weak (min 6 characters).',

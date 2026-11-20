@@ -1,16 +1,17 @@
 // Package imports
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/widget_previews.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // File imports
 import '../features/presentation/auth_notifier.dart';
-import 'package:flutter/widget_previews.dart';
-// import '../features/presentation/admin_dashboard.dart';
+import '../features/presentation/admin_dashboard.dart';
 import '../features/presentation/dormer_dashboard.dart';
 import '../features/presentation/login_screen.dart';
-// import '../features/presentation/admin_permit_history_screen.dart';
+import '../features/presentation/admin_permit_history_screen.dart';
+import '../features/presentation/admin/admin_shell.dart';
 import '../features/authentication/data/auth_repository.dart';
-// import '../router/app_router.dart';
 
 // Pages that belong to the student shell.
 
@@ -64,6 +65,27 @@ GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const StudentHomeScreen(),
+      ),
+      GoRoute(path: '/admin', redirect: (_, _) => '/admin/permit-logs'),
+
+      ShellRoute(
+        builder: (context, state, child) => AdminShell(
+          email: FirebaseAuth.instance.currentUser?.email ?? '',
+          onLogout: authRepository.signOut,
+          currentPath: state.matchedLocation,
+          child: child,
+        ),
+        routes: [
+          GoRoute(
+            path: '/admin/permit-logs',
+            builder: (_, _) =>
+                const AdminDashboardScreen(), // temporary until PermitLogsPage exists
+          ),
+          GoRoute(
+            path: '/admin/permit-history',
+            builder: (context, state) => const AdminPermitHistoryScreen(),
+          ),
+        ],
       ),
     ],
   );
