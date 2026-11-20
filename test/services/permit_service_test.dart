@@ -20,7 +20,8 @@ void main() {
     return PermitModel(
       id: id,
       userId: userId,
-      fullName: 'Test Name',
+      surname: 'Name', 
+      givenName: 'Test',
       roomNum: '131',
       permitType: type,
       destination: 'Bangs',
