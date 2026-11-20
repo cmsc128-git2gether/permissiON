@@ -57,17 +57,15 @@ class PermitService {
           : trimmedReason;
     }
 
-    // 1. Get the base map from the model
+    // Start from the model's map, then override fields so a new permit
+    // always begins in a clean "pending" state.
     final data = permit.toFirestore()
-      // 2. Override with the required createPermit defaults
       ..['permit_status'] = PermitStatus.pending.value
       ..['actual_time_in'] = null
       ..['disapproval_reason'] = null
       ..['approved_by'] = null
       ..['approved_at'] = null
-      ..['qr_id'] = null
       ..['created_at'] = FieldValue.serverTimestamp()
-      // 3. Late filing fields
       ..['is_late_filing'] = flag
       ..['late_filing_reason'] = storedReason;
 
