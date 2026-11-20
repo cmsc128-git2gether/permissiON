@@ -8,6 +8,10 @@ void main() {
     expect(redirectFor(AuthStatus.signedOut, '/admin'), '/login');
   });
 
+  test('not-set-up goes to login', () {
+    expect(redirectFor(AuthStatus.notSetUp, '/home'), '/login');
+  });
+
   test('user goes to user home', () {
     expect(redirectFor(AuthStatus.user, '/login'), '/home');
     expect(redirectFor(AuthStatus.user, '/splash'), '/home');

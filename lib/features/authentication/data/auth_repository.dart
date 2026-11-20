@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import '../../../errors/auth_failure.dart';
+import '../../../errors/login_auth_error_messages.dart';
+import '../domain/auth_state.dart';
 import '../domain/user_model.dart';
 
 // Handles login state and loads the user's role
@@ -21,8 +24,8 @@ class AuthRepository {
   /// The email is trimmed and lowercased so that "User@Mail.com " and
   /// "user@mail.com" resolve to the same account.
   ///
-  /// Throws a [FirebaseAuthException] with a user-friendly message if
-  /// authentication fails.
+  /// Throws an [AuthFailure] with a user-friendly message if authentication
+  /// fails.
   Future<void> signIn({required String email, required String password}) async {
     try {
       await _auth.signInWithEmailAndPassword(
@@ -30,8 +33,7 @@ class AuthRepository {
         password: password,
       );
     } on FirebaseAuthException catch (e) {
-      // Translate Firebase's error codes into app-specific, readable errors.
-      throw _mapError(e);
+      throw AuthFailure(e.code, friendlyAuthError(e));
     } on FirebaseException catch (e) {
       // Fallback for other Firebase errors such as network or backend issues
       // Show a generic message while original code is kept for debugging, so
@@ -178,38 +180,41 @@ class AuthRepository {
   /// Signs the current user out of Firebase Authentication.
   Future<void> signOut() => _auth.signOut();
 
-  // ---------------------------------------------------------------------------
-  // Gives an AppUser (with role) when someone logs in, or null when they log out
-  Stream<AppUser?> get authStateStream {
-    // Runs every time the login state changes
-    return _auth.authStateChanges().asyncMap((firebaseUser) async {
-      // Nobody is logged in
-      if (firebaseUser == null) return null;
+  // Emits loading before resolving the current Firebase Authentication state.
+  Stream<AuthState> get authStateStream async* {
+    yield AuthState.loading;
+
+    await for (final firebaseUser in _auth.authStateChanges()) {
+      if (firebaseUser == null) {
+        yield AuthState.signedOut;
+        continue;
+      }
 
       try {
-        // Get this user's document from the "users" collection
         final doc = await _firestore
             .collection('users')
             .doc(firebaseUser.uid)
             .get();
+        final data = doc.data();
+        if (!doc.exists || data == null) {
+          yield AuthState.notSetUp;
+          continue;
+        }
 
-        // Turn the document into an AppUser (includes the role)
-        return AppUser.fromFirestore(
-          doc.data(),
-          firebaseUser.uid,
-          firebaseUser.email ?? '', // Use empty text if there's no email
+        // Throws if access_level is missing or unknown; handled below as
+        // notSetUp, so a bad role never silently becomes end_user.
+        yield AuthState.signedIn(
+          AppUser.fromFirestore(
+            data,
+            firebaseUser.uid,
+            firebaseUser.email ?? '',
+          ),
         );
-      } on FirebaseException catch (e) {
-        debugPrint('Failed to load user doc: ${e.code} - ${e.message}');
-
-        // Fall back to the safe role 'end_user'
-        return AppUser.fromFirestore(
-          null,
-          firebaseUser.uid,
-          firebaseUser.email ?? '',
-        );
+      } catch (e) {
+        debugPrint('Failed to load user doc: $e');
+        yield AuthState.notSetUp;
       }
-    });
+    }
   }
 
   /// Converts a raw [FirebaseAuthException] into one with a user-friendly message.
@@ -225,10 +230,10 @@ class AuthRepository {
       'invalid-credential' ||
       'wrong-password' ||
       'user-not-found' => 'Incorrect email or password.',
-      //sign-up errors
+      // Admin account creation errors.
       'email-already-in-use' => 'That email is already registered.',
       'weak-password' => 'Password is too weak (min 6 characters).',
-      //applies both signIn and signUp
+      // Also applies to admin account creation.
       'invalid-email' => 'Please enter a valid email address.',
       // Catch-all for unexpected codes so raw Firebase never reaches the user
       _ => 'Authentication failed. Please try again.',
