@@ -10,6 +10,14 @@ Create accounts in Firebase Console > Security > Authentication, or just search 
 | <admin uid> | admin |
 | <dormer uid> | end_user |
 
+| Field | Type | Example |
+|---|---|---|
+| email | string | veritylim@example.com |
+| access_level | string | end_user
+| created_at | timestamp | 11/20/2026 |
+| updated_at | null | MM/DD/YYYY HH:MM |
+| deleted_at | null | MM/DD/YYYY HH:MM |
+
 ## end_user_profiles/{uid}
 | Field | Type | Example |
 |---|---|---|
@@ -17,30 +25,39 @@ Create accounts in Firebase Console > Security > Authentication, or just search 
 | given_name | string | Verity |
 | phone_num | string | 09676767670 |
 | room_num | string | 12 |
-| floor | number | 2 |
+| floor | int64 | 2 |
+| created_at | timestamp | 11/20/2026 |
+| updated_at | null | MM/DD/YYYY HH:MM |
+| deleted_at | null | MM/DD/YYYY HH:MM |
 
 ## admin_profiles/{uid}
 | Field | Type | Example |
 |---|---|---|
 | name | string | Balay Gumamela Admin |
+| created_at | timestamp | 11/20/2026 |
+| updated_at | null | MM/DD/YYYY HH:MM |
+| deleted_at | null | MM/DD/YYYY HH:MM |
 
 ## permits/{permitId}
 | Field | Type | Example |
 |---|---|---|
 | user_id | string | <dormer uid> |
-| full_name | string | Verity Lim |
+| surname | string | Lim |
+| given_name | string | Verity |
+| room_num | string | 12 |
 | permit_type | string | WEEKEND |
 | destination | string | Oton |
 | purpose | string | Home |
 | emergency_contact_person | string | Vill Aidjer Lim |
 | emergency_contact_num | string | 09123456767 |
-| expected_time_in | timestamp | 12/01/2026 |
-| actual_time_in | null | MM/DD/YYYY |
+| expected_time_in | timestamp | 12/01/2026 10:00 AM |
+| actual_time_in | null | MM/DD/YYYY HH:MM |
 | permit_status | PENDING |
 | approved_by | string | <admin uid> |
 | approved_at | null | MM/DD/YYYY HH:MM |
 | created_at | timestamp | MM/DD/YYYY HH:MM |
-| reason | null | --- |
+| is_late_file | boolean | false |
+| late_filing_reason | null | --- |
 
 ## checkin_codes/{permitId}
 | Field | Type | Example |
