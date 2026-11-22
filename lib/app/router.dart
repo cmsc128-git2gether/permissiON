@@ -16,7 +16,6 @@ import '../features/presentation/login_screen.dart';
 import '../features/presentation/admin_permit_history_screen.dart';
 import '../features/presentation/admin/admin_shell.dart';
 import '../features/authentication/data/auth_repository.dart';
-
 // Decides where a user should be, given auth status and current location.
 // Kept as a pure function so it can be unit tested without Firebase.
 //
