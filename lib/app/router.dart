@@ -3,6 +3,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:permission_app/services/permit_service.dart';
+// Only the student routes are needed. `show` also avoids a name clash,
+// since app_router.dart has its own createRouter.
+import 'package:permission_app/router/app_router.dart' show studentRoutes;
 
 // File imports
 import '../features/presentation/auth_notifier.dart';
@@ -13,12 +17,14 @@ import '../features/presentation/admin_permit_history_screen.dart';
 import '../features/presentation/admin/admin_shell.dart';
 import '../features/authentication/data/auth_repository.dart';
 
-// Pages that belong to the student shell.
-
 // Decides where a user should be, given auth status and current location.
 // Kept as a pure function so it can be unit tested without Firebase.
+//
+// Student pages: /home, /permits, /permits/new, /notifications, /profile.
+// Admin pages: everything under /admin.
 String? redirectFor(AuthStatus status, String location) {
   const publicOnly = {'/splash', '/login'};
+  final isAdminPath = location == '/admin' || location.startsWith('/admin/');
 
   switch (status) {
     case AuthStatus.unknown:
@@ -28,15 +34,14 @@ String? redirectFor(AuthStatus status, String location) {
       return location == '/login' ? null : '/login';
 
     case AuthStatus.user:
-      if (publicOnly.contains(location) || location.startsWith('/admin')) {
-        return '/home';
-      }
+      // Dormers can't see login/splash again, or any admin page.
+      if (publicOnly.contains(location) || isAdminPath) return '/home';
       return null;
 
     case AuthStatus.admin:
-      if (publicOnly.contains(location) || location == '/home') {
-        return '/admin';
-      }
+      // Admins can only be on /admin pages. This also keeps them out of
+      // every student page (/home, /permits, /notifications, ...).
+      if (!isAdminPath) return '/admin';
       return null;
   }
 }
@@ -44,6 +49,9 @@ String? redirectFor(AuthStatus status, String location) {
 // Sets up the app's pages and decides who can see which page
 GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
   final rootKey = GlobalKey<NavigatorState>();
+  // Created once, not on every page build.
+  // Assumes PermitService() defaults to FirebaseFirestore.instance.
+  final permitService = PermitService();
 
   return GoRouter(
     navigatorKey: rootKey,
@@ -61,11 +69,25 @@ GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
         builder: (context, state) =>
             LoginScreen(authRepository: authRepository),
       ),
-      // student shell: /home, /permits, /permits/new, /notifications, /profile
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const StudentHomeScreen(),
+
+      // Student shell with bottom tabs, defined once in app_router.dart.
+      ...studentRoutes(
+        rootKey,
+        homeBuilder: (_) {
+          final user = FirebaseAuth.instance.currentUser;
+          // Can briefly be null while signing out; the redirect fixes it.
+          if (user == null) return const SplashScreen();
+
+          final name = user.displayName?.trim();
+          return StudentHomeScreen(
+            service: permitService,
+            userId: user.uid,
+            // TODO: use given_name from end_user_profiles/{uid}.
+            displayName: (name == null || name.isEmpty) ? 'Dormer' : name,
+          );
+        },
       ),
+
       GoRoute(path: '/admin', redirect: (_, _) => '/admin/permit-logs'),
 
       ShellRoute(
@@ -91,7 +113,7 @@ GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
   );
 }
 
-/// For tests and the preview only. The app uses createRouter in app/router.dart.
+/// Shown while the auth state is still loading.
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
