@@ -21,8 +21,11 @@ service cloud.firestore {
     function isValidPermit() {
       let data = request.resource.data;
       return data.user_id == request.auth.uid 
-        && data.type in ['LATE', 'OVERNIGHT', 'WEEKEND']
-        && data.permit_status == 'PENDING';
+        && data.permit_type in ['LATE', 'OVERNIGHT', 'WEEKEND']
+        && data.permit_status == 'PENDING'
+        // a new permit can't arrive already approved
+        && data.get('approved_by', null) == null
+        && data.get('approved_at', null) == null;
     }
     function isPermitOwner(permitId) {
       return get(/databases/$(database)/documents/permits/$(permitId)).data.user_id == request.auth.uid;
@@ -76,6 +79,12 @@ service cloud.firestore {
       // allows deletion by admin
       allow delete: if isAdmin();
     }
+    // (For firestore indexes) a student lists their own permits with
+    // where('user_id', '==', uid).orderBy('created_at', descending: true)
+    // That query needs the composite index declared in firestore.indexes.json
+    // (permits: user_id ASC, created_at DESC). JSON can't hold comments, so
+    // the explanation is written here. The admin's all-permits list orders by
+    // created_at alone, which Firestore indexes automatically.
     match /permits/{permitId} {
       // allows dormer to create a pending permit
       allow create: if isAuthenticated() 
