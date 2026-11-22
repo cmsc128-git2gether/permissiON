@@ -7,6 +7,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import {
   doc, getDoc, setDoc, updateDoc, deleteDoc,
+  collection, getDocs, query, where, orderBy,
   serverTimestamp, Timestamp, setLogLevel,
 } from 'firebase/firestore';
 
@@ -59,23 +60,23 @@ beforeEach(async () => {
 
     // permits (all belong to student1 unless noted)
     await setDoc(doc(db, 'permits/pPending'), {
-      user_id: 'student1', type: 'LATE', permit_status: 'PENDING', actual_time_in: null,
+      user_id: 'student1', permit_type: 'LATE', permit_status: 'PENDING', actual_time_in: null,
     });
     await setDoc(doc(db, 'permits/pActive'), {
-      user_id: 'student1', type: 'LATE', permit_status: 'ACTIVE', actual_time_in: null,
+      user_id: 'student1', permit_type: 'LATE', permit_status: 'ACTIVE', actual_time_in: null,
     });
     await setDoc(doc(db, 'permits/pActiveNoCode'), {
-      user_id: 'student1', type: 'OVERNIGHT', permit_status: 'ACTIVE', actual_time_in: null,
+      user_id: 'student1', permit_type: 'OVERNIGHT', permit_status: 'ACTIVE', actual_time_in: null,
     });
     await setDoc(doc(db, 'permits/pExpired'), {
-      user_id: 'student1', type: 'LATE', permit_status: 'ACTIVE', actual_time_in: null,
+      user_id: 'student1', permit_type: 'LATE', permit_status: 'ACTIVE', actual_time_in: null,
     });
     await setDoc(doc(db, 'permits/pDone'), {
-      user_id: 'student1', type: 'LATE', permit_status: 'ACTIVE',
+      user_id: 'student1', permit_type: 'LATE', permit_status: 'ACTIVE',
       actual_time_in: Timestamp.fromDate(TIME_IN),
     });
     await setDoc(doc(db, 'permits/pCompleted'), {
-      user_id: 'student1', type: 'LATE', permit_status: 'COMPLETED', actual_time_in: null,
+      user_id: 'student1', permit_type: 'LATE', permit_status: 'COMPLETED', actual_time_in: null,
     });
 
     // check-in codes (doc id = permit id)
@@ -233,31 +234,31 @@ test('admin can delete a student profile; student cannot', async () => {
 //=== PERMITS: CREATE / READ ===
 test('student can create own PENDING permit', async () => {
   await assertSucceeds(setDoc(doc(as('student1'), 'permits/new1'), {
-    user_id: 'student1', type: 'WEEKEND', permit_status: 'PENDING',
+    user_id: 'student1', permit_type: 'WEEKEND', permit_status: 'PENDING',
   }));
 });
 
 test('student cannot create an ACTIVE permit', async () => {
   await assertFails(setDoc(doc(as('student1'), 'permits/new1'), {
-    user_id: 'student1', type: 'LATE', permit_status: 'ACTIVE',
+    user_id: 'student1', permit_type: 'LATE', permit_status: 'ACTIVE',
   }));
 });
 
 test('student cannot create a permit with an invalid type', async () => {
   await assertFails(setDoc(doc(as('student1'), 'permits/new1'), {
-    user_id: 'student1', type: 'HOLIDAY', permit_status: 'PENDING',
+    user_id: 'student1', permit_type: 'HOLIDAY', permit_status: 'PENDING',
   }));
 });
 
 test('student cannot create a permit for someone else', async () => {
   await assertFails(setDoc(doc(as('student1'), 'permits/new1'), {
-    user_id: 'student2', type: 'LATE', permit_status: 'PENDING',
+    user_id: 'student2', permit_type: 'LATE', permit_status: 'PENDING',
   }));
 });
 
 test('admin cannot create a permit', async () => {
   await assertFails(setDoc(doc(as('admin1'), 'permits/new1'), {
-    user_id: 'admin1', type: 'LATE', permit_status: 'PENDING',
+    user_id: 'admin1', permit_type: 'LATE', permit_status: 'PENDING',
   }));
 });
 
@@ -311,7 +312,7 @@ test('student cannot set any status other than CANCELLED/COMPLETED', async () =>
 
 test('student cannot change other fields while cancelling', async () => {
   await assertFails(updateDoc(doc(as('student1'), 'permits/pPending'), {
-    permit_status: 'CANCELLED', type: 'WEEKEND',
+    permit_status: 'CANCELLED', permit_type: 'WEEKEND',
   }));
 });
 
@@ -454,4 +455,85 @@ test('admin can read and write delinquency logs', async () => {
 
 test('student cannot write a delinquency log', async () => {
   await assertFails(setDoc(doc(as('student1'), 'delinquency_logs/d2'), { user_id: 'student1' }));
+});
+
+//=== PROTOTYPE PATHS (rules issue) ===
+// What the app writes when a student files a permit, including the
+// newer fields (surname, given_name, floor, is_late_filing, late_filing_reason)
+const appPermit = (overrides = {}) => ({
+  user_id: 'student1',
+  surname: 'Dela Cruz',
+  given_name: 'Juan',
+  room_num: '204',
+  floor: 2,
+  permit_type: 'LATE',
+  destination: 'Iloilo City',
+  purpose: 'Org Meeting',
+  emergency_contact_person: 'Maria Dela Cruz',
+  emergency_contact_num: '09171234567',
+  expected_time_in: Timestamp.fromDate(hours(8)),
+  actual_time_in: null,
+  permit_status: 'PENDING',
+  disapproval_reason: null,
+  approved_by: null,
+  approved_at: null,
+  qr_id: null,
+  created_at: Timestamp.now(),
+  is_late_filing: true,
+  late_filing_reason: 'Class ran past 6 PM',
+  ...overrides,
+});
+
+test('student creates a PENDING permit with the new fields', async () => {
+  await assertSucceeds(setDoc(doc(as('student1'), 'permits/new1'), appPermit()));
+});
+
+test('student cannot create a permit that is already approved (approved_by set)', async () => {
+  await assertFails(setDoc(
+    doc(as('student1'), 'permits/new1'),
+    appPermit({ approved_by: 'admin1' }),
+  ));
+});
+
+test('student cannot create a permit with approved_at set', async () => {
+  await assertFails(setDoc(
+    doc(as('student1'), 'permits/new1'),
+    appPermit({ approved_at: Timestamp.now() }),
+  ));
+});
+
+test('student cannot list all permits', async () => {
+  await assertFails(getDocs(collection(as('student1'), 'permits')));
+});
+
+test('student can list only their own permits, newest first', async () => {
+  const q = query(
+    collection(as('student1'), 'permits'),
+    where('user_id', '==', 'student1'),
+    orderBy('created_at', 'desc'),
+  );
+  await assertSucceeds(getDocs(q));
+});
+
+test('admin can list all permits', async () => {
+  await assertSucceeds(getDocs(collection(as('admin1'), 'permits')));
+});
+
+test('admin changes PENDING to ACTIVE, stamping approved_by and approved_at', async () => {
+  await assertSucceeds(updateDoc(doc(as('admin1'), 'permits/pPending'), {
+    permit_status: 'ACTIVE', approved_by: 'admin1', approved_at: serverTimestamp(),
+  }));
+});
+
+test('admin changes PENDING to DENIED with a reason', async () => {
+  await assertSucceeds(updateDoc(doc(as('admin1'), 'permits/pPending'), {
+    permit_status: 'DENIED', approved_by: 'admin1', approved_at: serverTimestamp(),
+    disapproval_reason: 'Reason for going out is outside of academic purposes',
+  }));
+});
+
+test('student cannot change their own PENDING permit to DENIED', async () => {
+  await assertFails(updateDoc(doc(as('student1'), 'permits/pPending'), {
+    permit_status: 'DENIED',
+  }));
 });
