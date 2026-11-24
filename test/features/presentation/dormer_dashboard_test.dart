@@ -188,7 +188,20 @@ void main() {
       expect(inDialog('Maria Dela Cruz'), findsOneWidget);
       expect(inDialog('09191234567'), findsOneWidget);
     });
+    testWidgets('a newly filed permit appears without reloading', (t) async {
+      await pumpDashboard(t, db); // starts empty
 
+      expect(cardsIn('pending_permit_card'), findsNothing);
+      expect(find.byKey(const Key('pending_empty_state')), findsOneWidget);
+
+      // Same thing the permit form does when it submits.
+      await addPermit(db, 'p1', 'PENDING');
+      await t.pumpAndSettle();
+
+      expect(cardsIn('pending_permit_card'), findsOneWidget);
+      expect(find.byKey(const Key('pending_empty_state')), findsNothing);
+      expect(heading('Pending / Scheduled (1/1)'), findsOneWidget);
+    });
     testWidgets('a status change on the stream moves the permit', (t) async {
       await addPermit(db, 'p1', 'PENDING');
       await pumpDashboard(t, db);
@@ -200,6 +213,7 @@ void main() {
       await db.collection('permits').doc('p1').update({
         'permit_status': 'ACTIVE',
       });
+      
       await t.pumpAndSettle();
 
       expect(cardsIn('active_permit_card'), findsOneWidget);
