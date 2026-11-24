@@ -52,6 +52,18 @@ class AppTheme {
     minimumSize: const Size(96, 44),
   );
 
+    static final ButtonStyle flowOutlineButton = OutlinedButton.styleFrom(
+    foregroundColor: AppColors.flow,
+    side: const BorderSide(color: AppColors.flow, width: 1.5),
+    shape: const StadiumBorder(),
+    minimumSize: const Size(96, 44),
+  );
+
+  static final hintColor = AppColors.ink.withValues(alpha: 0.45);
+
+  
+
+
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(seedColor: AppColors.action).copyWith(
       primary: AppColors.action,
@@ -63,6 +75,7 @@ class AppTheme {
     );
 
     return ThemeData(
+      hintColor: hintColor,
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.pageBg,
@@ -85,6 +98,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.fieldBg,
+
+        hintStyle: TextStyle(color: hintColor, fontSize: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.ink, width: 1.5),

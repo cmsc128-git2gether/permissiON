@@ -10,6 +10,10 @@ import 'package:permission_app/theme/app_theme.dart';
 // Shows the real StudentHomeScreen inside the bottom-tab shell, filled with
 // the same user and permit data that seed_emulator.dart writes to the
 // Firestore emulator (permit IDs are random here).
+import 'package:permission_app/features/presentation/permits/permit_request.dart';
+import 'package:permission_app/features/presentation/permits/permit_wizard_screen.dart';
+
+
 
 // Same user as seed_emulator.dart.
 const _userId = 'u1';
@@ -54,13 +58,23 @@ Future<FakeFirebaseFirestore> _seededDb() async {
 Future<void> main() async {
   final db = await _seededDb();
 
+
   final router = createRouter(
     homeBuilder: (_) => StudentHomeScreen(
       service: PermitService(firestore: db),
       userId: _userId,
       displayName: _displayName,
     ),
+    newPermitBuilder: (_) => PermitWizardScreen(
+      userId: _userId,
+      loadFiler: () async => const PermitFiler(
+          surname: 'Name', givenName: 'Test', roomNum: '131', floor: 1),
+      createPermit: (request, {lateReason}) async {
+        await Future<void>.delayed(const Duration(seconds: 1));
+      },
+    ),
   );
+
 
   runApp(MaterialApp.router(
     debugShowCheckedModeBanner: false,
@@ -68,3 +82,5 @@ Future<void> main() async {
     routerConfig: router,
   ));
 }
+
+
