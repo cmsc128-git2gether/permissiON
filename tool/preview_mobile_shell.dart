@@ -68,14 +68,27 @@ Future<void> main() async {
     newPermitBuilder: (_) => PermitWizardScreen(
       userId: _userId,
       loadFiler: () async => const PermitFiler(
-          surname: 'Name', givenName: 'Test', roomNum: '131', floor: 1),
-      createPermit: (request, {lateReason}) async {
-        await Future<void>.delayed(const Duration(seconds: 1));
-      },
-    ),
-  );
-
-
+        surname: 'Name', givenName: 'Test', roomNum: '131', floor: 1),
+    createPermit: (request, {lateReason}) async {
+      await db.collection('permits').add({
+        'user_id': request.userId,
+        'surname': request.filer.surname,
+        'given_name': request.filer.givenName,
+        'room_num': request.filer.roomNum,
+        'permit_type': request.type.name.toUpperCase(),
+        'destination': request.destination,
+        'purpose': request.purpose,
+        'emergency_contact_person': request.contactPerson,
+        'emergency_contact_num': request.contactNumber,
+        'expected_time_in': Timestamp.fromDate(request.expectedReturnUtc),
+        'permit_status': 'PENDING',
+        'disapproval_reason': null,
+        'actual_time_in': null,
+        'created_at': Timestamp.now(),
+        });
+        },
+      ),
+    );
   runApp(MaterialApp.router(
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light(),
