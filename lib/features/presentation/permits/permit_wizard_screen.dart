@@ -93,7 +93,8 @@ class _PermitWizardScreenState extends State<PermitWizardScreen> {
         _loadingFiler = false;
         _loadFailed = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('LOAD FILER ERROR: $e');
       if (!mounted) return;
       setState(() {
         _loadingFiler = false;
