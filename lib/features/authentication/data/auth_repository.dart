@@ -6,6 +6,7 @@ import '../../../errors/auth_failure.dart';
 import '../../../errors/login_auth_error_messages.dart';
 import '../domain/auth_state.dart';
 import '../domain/user_model.dart';
+import 'package:permission_app/features/presentation/permits/permit_request.dart'; 
 
 // Handles login state and loads the user's role
 class AuthRepository {
@@ -216,6 +217,32 @@ class AuthRepository {
       }
     }
   }
+// for PermitFiler
+
+// ...inside class AuthRepository:
+
+/// The student's details for permit filing. Throws if the profile is
+/// missing or incomplete, which makes the wizard block filing.
+Future<PermitFiler> loadFiler(String uid) async {
+  final d = (await _firestore.collection('end_user_profiles').doc(uid).get()).data();
+  if (d == null) throw StateError('No profile for $uid');
+  final surname = d['surname'];
+  final givenName = d['given_name'];
+  final roomNum = d['room_num'];
+  final floor = d['floor'];
+  if (surname is! String ||
+      givenName is! String ||
+      roomNum is! String ||
+      floor is! num) {
+    throw StateError('Profile for $uid is incomplete');
+  }
+  return PermitFiler(
+    surname: surname,
+    givenName: givenName,
+    roomNum: roomNum,
+    floor: floor.toInt(),
+  );
+}
 
   /// Converts a raw [FirebaseAuthException] into one with a user-friendly message.
   ///

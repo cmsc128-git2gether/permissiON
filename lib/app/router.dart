@@ -3,6 +3,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:permission_app/features/presentation/admin/pending_permits.page.dart';
+import 'package:permission_app/features/presentation/permits/permit_wizard_screen.dart';
+import 'package:permission_app/models/data_enums.dart';
+import 'package:permission_app/models/permit_model.dart';
 import 'package:permission_app/services/permit_service.dart';
 // Only the student routes are needed. `show` also avoids a name clash,
 // since app_router.dart has its own createRouter.
@@ -86,6 +90,33 @@ GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
             displayName: (name == null || name.isEmpty) ? 'Dormer' : name,
           );
         },
+        newPermitBuilder: (_) {
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          return PermitWizardScreen(
+            userId: uid,
+            loadFiler: () => authRepository.loadFiler(uid!),
+            createPermit: (req, {lateReason}) => permitService.createPermit(
+              PermitModel(
+                id: '', // firestore assigns the real id
+                userId: req.userId,
+                surname: req.filer.surname,
+                givenName: req.filer.givenName,
+                roomNum: req.filer.roomNum,
+                floor: req.filer.floor,
+                permitType: req.type,
+                destination: req.destination,
+                purpose: req.purpose,
+                emergencyContactPerson: req.contactPerson,
+                emergencyContactNum: req.contactNumber,
+                expectedTimeIn: req.expectedReturnUtc,
+                createdAt: DateTime.now(), // overwritten by the server timestamp
+                isLateFiling: lateReason != null,
+                lateFilingReason: lateReason,
+              ),
+              lateReason: lateReason,
+            ),
+          );
+        },
       ),
 
       GoRoute(path: '/admin', redirect: (_, _) => '/admin/permit-logs'),
@@ -100,8 +131,17 @@ GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
         routes: [
           GoRoute(
             path: '/admin/permit-logs',
-            builder: (_, _) =>
-                const AdminDashboardScreen(), // temporary until PermitLogsPage exists
+            builder: (_, _) {
+              final adminId = FirebaseAuth.instance.currentUser!.uid;
+              return PendingPermitsPage(
+                listen: () => permitService.listenToPendingPermits(),
+                onAccept: (p) =>
+                    permitService.updatePermitStatus(adminId, p.id, PermitStatus.active.value),
+                onDeny: (p, reason) => permitService.updatePermitStatus(
+                    adminId, p.id, PermitStatus.denied.value,
+                    disapprovalReason: reason),
+              );
+            },
           ),
           GoRoute(
             path: '/admin/permit-history',
