@@ -8,13 +8,16 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../authentication/data/auth_repository.dart';
+import '../authentication/domain/auth_state.dart';
 import '../authentication/domain/user_model.dart';
+
 // The possible authentication states the app can be in:
-// - unknown:    haven't received the first auth event yet (e.g. splash screen)
+// - loading:    haven't received the first auth event yet (e.g. splash screen)
 // - signedOut:  no user is logged in
 // - user:       a regular user is logged in
 // - admin:      a user with admin privileges is logged in
-enum AuthStatus { unknown, signedOut, user, admin }
+enum AuthStatus { loading, signedOut, notSetUp, user, admin }
+
 // A ChangeNotifier that widgets can listen to for auth changes.
 class AuthNotifier extends ChangeNotifier {
   // Constructor: takes the repository and immediately starts listening
@@ -22,17 +25,17 @@ class AuthNotifier extends ChangeNotifier {
   AuthNotifier(AuthRepository repo) {
     _sub = repo.authStateStream.listen(
       // Called every time the auth state changes (login, logout, etc.).
-      (appUser) {
-        // Save the latest user (null if signed out).
-        currentUser = appUser;
-        // Map the user to a status using pattern matching:
-        // - null user        -> signedOut
-        // - user with admin  -> admin
-        // - any other user   -> user
-        status = switch (appUser) {
-          null => AuthStatus.signedOut,
-          AppUser(isAdmin: true) => AuthStatus.admin,
-          _ => AuthStatus.user,
+      (authState) {
+        status = switch (authState) {
+          AuthLoading() => AuthStatus.loading,
+          AuthSignedOut() => AuthStatus.signedOut,
+          AuthNotSetUp() => AuthStatus.notSetUp,
+          AuthSignedIn(:final user) when user.isAdmin => AuthStatus.admin,
+          AuthSignedIn() => AuthStatus.user,
+        };
+        currentUser = switch (authState) {
+          AuthSignedIn(:final user) => user,
+          _ => null,
         };
         // Tell listening widgets to rebuild with the new state.
         notifyListeners();
@@ -47,13 +50,13 @@ class AuthNotifier extends ChangeNotifier {
       },
     );
   }
-  // Current auth status, starts as `unknown`
-  AuthStatus status = AuthStatus.unknown; // stays here until the FIRST event
+  // Current auth status, starts as `loading`.
+  AuthStatus status = AuthStatus.loading;
   // The currently logged-in user, or null if signed out / not yet known.
   AppUser? currentUser;
   // Subscription to the auth stream. `late final` because it's assigned
   // in the constructor body, not at declaration. So it can be cancelled.
-  late final StreamSubscription<AppUser?> _sub;
+  late final StreamSubscription<AuthState> _sub;
   // Cleanup: cancel the stream subscription when the notifier is disposed
   // to avoid memory leaks and callbacks firing after disposal.
   @override

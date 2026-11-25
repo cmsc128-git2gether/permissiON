@@ -244,9 +244,8 @@ cp .env.example .env   # fill in values
 ### Contract Stubs
 | Surface | Signature | Returns / throws |
 |---|---|---|
-| `AuthRepository.authStateStream` | existing | `Stream<AppUser?>`, null = signed out |
-| `AuthRepository.signIn` | `({email, password})` | `Future<void>`, throws `UnimplementedError`  (should throw `AuthFailure` by implementation)|
-| `AuthRepository.signUp` | `({email, password})` | `Future<void>`, throws `UnimplementedError`  (should throw `AuthFailure` by implementation)|
+| `AuthRepository.authStateStream` | existing | `Stream<AuthState>`: loading, signedOut, notSetUp, or signedIn |
+| `AuthRepository.signIn` | `({email, password})` | `Future<void>`, throws `AuthFailure` on authentication errors |
 | `AuthRepository.signOut` | existing | `Future<void>` |
 | `PermitService.listenToAllPermits` | `()` | `Stream<List<PermitModel>>`, newest first |
 | `PermitService.listenToPermit` | `(permitId)` | `Stream<PermitModel?>`, null if missing |

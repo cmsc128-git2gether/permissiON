@@ -1,7 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'auth_failure.dart';
 
 // Turns errors into readable messages for users
 String friendlyAuthError(Object error) {
+  if (error is AuthFailure) return error.message;
+
   if (error is FirebaseAuthException) {
     switch (error.code) {
       // Wrong email and password share message so attackers

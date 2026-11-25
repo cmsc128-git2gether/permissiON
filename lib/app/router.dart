@@ -21,10 +21,11 @@ String? redirectFor(AuthStatus status, String location) {
   const publicOnly = {'/splash', '/login'};
 
   switch (status) {
-    case AuthStatus.unknown:
+    case AuthStatus.loading:
       return location == '/splash' ? null : '/splash';
 
     case AuthStatus.signedOut:
+    case AuthStatus.notSetUp:
       return location == '/login' ? null : '/login';
 
     case AuthStatus.user:
@@ -86,6 +87,10 @@ GoRouter createRouter(AuthNotifier auth, AuthRepository authRepository) {
             builder: (context, state) => const AdminPermitHistoryScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/admin/permit-history',
+        builder: (context, state) => const AdminPermitHistoryScreen(),
       ),
     ],
   );
