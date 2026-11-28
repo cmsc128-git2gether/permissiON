@@ -3,24 +3,42 @@ import '../models/data_enums.dart';
 import '../models/delinquency_log_model.dart';
 
 class DelinquencyService {
-  DelinquencyService({FirebaseFirestore? firestore});
+  DelinquencyService({FirebaseFirestore? firestore})
+      : _db = firestore ?? FirebaseFirestore.instance;
 
-  ///for admin: every log, newest first.
-  Stream<List<DelinquencyLogModel>> listenToDelinquencies() =>
-      Stream.value(const []);
+  // ignore: unused_field
+  final FirebaseFirestore _db; // remove the ignore once the bodies use it
 
-  ///singular student's logs, newest first.
-  Stream<List<DelinquencyLogModel>> listenToUserDelinquencies(String userId) =>
-      Stream.value(const []);
+  /// Admin: every log, newest first.
+  Stream<List<DelinquencyLogModel>> listenToDelinquencies() {
+    // TODO(BE-3): orderBy created_at desc.
+    return Stream.value(const []);
+  }
 
-  /// Creates a log, copying user_id from the permit. Idempotent: one log per
-  /// (permitId, reason), using the doc id '${permitId}_${reason.value}'.
-  /// Throws StateError if the permit does not exist.
-  Future<void> flagPermit(String permitId, DelinquencyReason reason) async =>
-      throw UnimplementedError('flagPermit');
+  /// One student's logs, newest first. Needs index user_id + created_at.
+  Stream<List<DelinquencyLogModel>> listenToUserDelinquencies(String userId) {
+    // TODO(BE-3)
+    return Stream.value(const []);
+  }
 
-  /// Marks a log resolved with an optional note, in a transaction.
-  /// Throws StateError if the log is missing or already resolved.
-  Future<void> resolve(String adminId, String logId, {String? note}) async =>
-      throw UnimplementedError('resolve');
+  /// Overdue permit. Throws StateError if the permit is missing or not OVERDUE.
+  /// Idempotent: doc id '${permitId}_overdue'.
+  Future<void> flagOverdue(String permitId) async {
+    // TODO(BE-3)
+    throw UnimplementedError('flagOverdue');
+  }
+
+  /// "No" on a no-permit Room Check row. [day] is the Manila day.
+  /// Idempotent: doc id '${userId}_${dayKey}_nopermit'. permitId is null.
+  Future<void> flagNoPermit(String userId, DateTime day, String adminId) async {
+    // TODO(BE-3)
+    throw UnimplementedError('flagNoPermit');
+  }
+
+  /// Marks ACTIVE permits past their expected time as OVERDUE and flags each.
+  /// Returns how many it flagged. Called by the admin dashboard on load.
+  Future<int> sweep() async {
+    // TODO(BE-4)
+    throw UnimplementedError('sweep');
+  }
 }

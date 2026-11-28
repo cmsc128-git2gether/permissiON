@@ -239,4 +239,20 @@ class PermitService {
   Future<int> expireStalePending() async {
     throw UnimplementedError('expireStalePending');
   }
+
+/// Admin generates a 6-digit code (injected Random.secure), valid 5 minutes,
+/// stored in checkin_codes/{permitId}, replacing any older one.
+/// StateError if the permit is missing, not ACTIVE or OVERDUE, or timed in.
+Future<String> generateCheckinCode(String adminId, String permitId) async {
+  // TODO(BE-6)
+  throw UnimplementedError('generateCheckinCode');
+}
+
+/// Student submits the code; the rules compare it and stamp the time.
+/// StateError('Wrong or expired code') on permission-denied.
+Future<void> submitCheckinCode(String userId, String permitId, String code) async {
+  // TODO(BE-6)
+  throw UnimplementedError('submitCheckinCode');
+}
+
 }
