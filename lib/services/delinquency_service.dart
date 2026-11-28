@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/data_enums.dart';
+// import '../models/data_enums.dart';
 import '../models/delinquency_log_model.dart';
 
 class DelinquencyService {

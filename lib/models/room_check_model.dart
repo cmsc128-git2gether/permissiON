@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// One attendance mark, stored at room_checks/{dayKey}_{userId}.
 class RoomCheckModel {
